@@ -7,19 +7,19 @@ program KHMH_particles
 
    ! real(4), external :: interpolate
 
-   integer, parameter :: nrx = 80
-   integer, parameter :: nry = 80
-   integer, parameter :: nrz = 80
-   integer, parameter :: ny = 100
+   integer, parameter :: nrx = 81
+   integer, parameter :: nry = 81
+   integer, parameter :: nrz = 81
+   integer, parameter :: ny = 201
 
    real(4), parameter :: drx = 0.01
    real(4), parameter :: dry = 0.01
    real(4), parameter :: drz = 0.01
    real(4), parameter :: dy = 0.01
 
-   integer, parameter :: nt = 3100
+   integer, parameter :: nt = 50
 
-   integer, parameter :: nprtcls = 10000
+   integer, parameter :: nprtcls = 1000000
 
    real(4), parameter :: re = 20580.0
    real(4), parameter :: nu = 1./re
@@ -85,6 +85,9 @@ program KHMH_particles
       nfiles = rstop - rstart + 1
    end if
 
+   rstart = rstart + 1
+   rstop = rstop + 1
+
    nb_procs = 1
 
 !$OMP PARALLEL
@@ -112,6 +115,10 @@ program KHMH_particles
    Lrx = rx(nrx)
    Lry = ry(nry)
    Lrz = rz(nrz)
+
+   if (rank == 0) then
+      print *, Lrx, Lry, Lrz, y(ny)
+   end if
 
    allocate (counter(nrx, nry, nrz, ny))
    allocate (duidui(nrx, nry, nrz, ny))
@@ -145,6 +152,7 @@ program KHMH_particles
    ! MPI parallel in time
    do it = rstart, rstop
 
+      print *, "Timestep = ", it
       call load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                          pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
                          pdudxdx, pdudydy, pdudzdz, pdvdxdx, pdvdydy, pdvdzdz, &
