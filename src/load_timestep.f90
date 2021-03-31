@@ -19,7 +19,7 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
    real(4) :: pdumdy(nprtcls), pduvdy(nprtcls), pdvvdy(nprtcls)
    real(4) :: pdudt(nprtcls), pdvdt(nprtcls), pdwdt(nprtcls)
 
-   character(100) :: fname, case_fn = "re9502pipi."
+   character(100) :: fname="1mrandom", case_fn = "re9502pipi."
    character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/particles/"
 
    integer :: varid(35), ncid, startv(2), countv(2)

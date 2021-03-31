@@ -13,7 +13,7 @@ subroutine save_terms(nrx, nry, nrz, ny, rx, ry, rz, y, &
    real(4), dimension(nrx, nry, nrz, ny)  :: Dt, Tr, Ty, Trm, Tym, Tx, Tz, Rs, Tp, Dr, Dc, Dis, duidui, counter
    real(4), dimension(nrx, nry, nrz, ny)  :: Tr_I, Tr_H
 
-   character(100) :: int2char, case_fn = "re9502pipi."
+   character(100) :: case_fn = "re9502pipi."
    character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
    where (counter .gt. 0.5) duidui = duidui/counter
