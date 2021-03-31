@@ -15,7 +15,7 @@ MODDIR = ./mod
 SRCDIR = ./src
 
 ### List of all files for the main code
-SRC = $(SRCDIR)/interpolate_mod.f90 $(SRCDIR)/particleTracer.f90 $(SRCDIR)/initialize.f90 $(SRCDIR)/load_velocity.f90 $(SRCDIR)/save.f90 
+SRC = $(SRCDIR)/KHMH_particles.f90 $(SRCDIR)/initialize.f90 $(SRCDIR)/load_timestep.f90 $(SRCDIR)/save.f90 
 OBJ = $(SRC:%.f90=%.o)
 
 ###### OPTIONS settins ########
@@ -25,9 +25,9 @@ LINKOPT = $(NETCDFlib)
 
 # -------------------------------------------------
 
-all: particleTracer
+all: KHMH_particles
 
-particleTracer : $(OBJ)
+KHMH_particles : $(OBJ)
 	$(FC) -o $@ $(LINKOPT) $(OBJ) $(NETCDFlib)
 
 $(OBJ):$(SRCDIR)%.o : $(SRCDIR)%.f90
@@ -43,4 +43,4 @@ $(OBJ):$(SRCDIR)%.o : $(SRCDIR)%.f90
 
 clean:
 	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.mod
-	rm -f *.o *.mod particleTracer
+	rm -f *.o *.mod KHMH_particles
