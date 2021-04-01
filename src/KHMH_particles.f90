@@ -61,7 +61,7 @@ program KHMH_particles
 
    character(100) :: input_fn = "5mrandom"
    character(100) :: output_fn = "5mrandom"
-   character(100) :: case_fn = "re9502pipi.", output_fn = "5mrandom"
+   character(100) :: case_fn = "re9502pipi."
    character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
    !=================================================================
