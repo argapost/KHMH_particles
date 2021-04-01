@@ -1,11 +1,12 @@
 subroutine save_terms(nrx, nry, nrz, ny, rx, ry, rz, y, &
                       Dt, Tr, Ty, Trm, Tym, Tx, Tz, Rs, &
                       Tp, Dr, Dc, Dis, duidui, counter, &
-                      Tr_I, Tr_H)
+                      Tr_I, Tr_H, output_fn)
 
    use netcdf
 
    integer :: nrx, nry, nrz, ny
+   real(4) :: rx(nrx), ry(nry), rz(nrz), y(ny)
 
    integer :: varid(16), dimid(4), idgrid_r1, idgrid_r2, idgrid_r3, idgrid_y
    integer :: ncid
@@ -13,7 +14,7 @@ subroutine save_terms(nrx, nry, nrz, ny, rx, ry, rz, y, &
    real(4), dimension(nrx, nry, nrz, ny)  :: Dt, Tr, Ty, Trm, Tym, Tx, Tz, Rs, Tp, Dr, Dc, Dis, duidui, counter
    real(4), dimension(nrx, nry, nrz, ny)  :: Tr_I, Tr_H
 
-   character(100) :: case_fn = "re9502pipi."
+   character(100) :: case_fn = "re9502pipi.", output_fn
    character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
    where (counter .gt. 0.5) duidui = duidui/counter
@@ -29,10 +30,10 @@ subroutine save_terms(nrx, nry, nrz, ny, rx, ry, rz, y, &
    where (counter .gt. 0.5) Tp = Tp/counter
    where (counter .gt. 0.5) Dr = Dr/counter
    where (counter .gt. 0.5) Dc = Dc/counter
-   where (counter .gt. 0.5) Dt = Dc/counter
+   where (counter .gt. 0.5) Dt = Dt/counter
    where (counter .gt. 0.5) Dis = Dis/counter
 
-   call io_check(nf90_create(path=trim(data_dir)//'khmh/'//trim(case_fn)//'particles.nc', &
+   call io_check(nf90_create(path=trim(data_dir)//'khmh/'//trim(case_fn)//trim(output_fn)'.nc', &
                              cmode=or(nf90_clobber, nf90_netcdf4), ncid=ncid))
 
    call io_check(nf90_def_dim(ncid, 'dim_scale_x', nrx, dimid(1)))
@@ -94,7 +95,7 @@ subroutine save_terms(nrx, nry, nrz, ny, rx, ry, rz, y, &
 
    call io_check(nf90_put_var(ncid, varid(15), Dis))
 
-   call io_check(nf90_put_var(ncid, varid(16), Dis))
+   call io_check(nf90_put_var(ncid, varid(16), counter))
 
    call io_check(nf90_close(ncid))
 

@@ -17,9 +17,9 @@ program KHMH_particles
    real(4), parameter :: drz = 0.01
    real(4), parameter :: dy = 0.01
 
-   integer, parameter :: nt = 50
+   integer, parameter :: nt = 580
 
-   integer, parameter :: nprtcls = 1000000
+   integer, parameter :: nprtcls = 5000000
 
    real(4), parameter :: re = 20580.0
    real(4), parameter :: nu = 1./re
@@ -59,7 +59,9 @@ program KHMH_particles
    integer :: rank, size, ierr
    integer :: rstart, rstop, count, remainder, nfiles
 
-   character(100) :: case_fn = "re9502pipi."
+   character(100) :: input_fn = "5mrandom"
+   character(100) :: output_fn = "5mrandom"
+   character(100) :: case_fn = "re9502pipi.", output_fn = "5mrandom"
    character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
    !=================================================================
@@ -158,7 +160,7 @@ program KHMH_particles
                          pdudxdx, pdudydy, pdudzdz, pdvdxdx, pdvdydy, pdvdzdz, &
                          pdwdxdx, pdwdydy, pdwdzdz, peps, pdpdx, pdpdy, pdpdz, &
                          pdumdy, pduvdy, pdvvdy, pufl, pdudt, pdvdt, pdwdt, &
-                         nprtcls, it)
+                         nprtcls, it, input_fn)
       pum = pu - pufl
 
 !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx,pry,prz,pyc,irx,iry,irz,iy,du,us,dum,usm,Tr_tp,Ty_tp,Trm_tp,Tym_tp,Tx_tp,Tz_tp,Rs_tp,D_tp)
@@ -425,7 +427,7 @@ program KHMH_particles
       call save_terms(nrx, nry, nrz, ny, rx, ry, rz, y, &
                       Dt, Tr, Ty, Trm, Tym, Tx, Tz, Rs, &
                       Tp, Dr, Dc, Dis, duidui, counter, &
-                      Tr_I, Tr_H)
+                      Tr_I, Tr_H, output_fn)
    end if
 
    CALL CPU_TIME(t2)
