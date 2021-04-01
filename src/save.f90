@@ -33,7 +33,7 @@ subroutine save_terms(nrx, nry, nrz, ny, rx, ry, rz, y, &
    where (counter .gt. 0.5) Dt = Dt/counter
    where (counter .gt. 0.5) Dis = Dis/counter
 
-   call io_check(nf90_create(path=trim(data_dir)//'khmh/'//trim(case_fn)//trim(output_fn)'.nc', &
+   call io_check(nf90_create(path=trim(data_dir)//'khmh/'//trim(case_fn)//trim(output_fn)//'.nc', &
                              cmode=or(nf90_clobber, nf90_netcdf4), ncid=ncid))
 
    call io_check(nf90_def_dim(ncid, 'dim_scale_x', nrx, dimid(1)))
