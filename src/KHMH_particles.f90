@@ -173,10 +173,14 @@ program KHMH_particles
          pyc = (py(ip2) + py(ip1))/2
 
          if ((prx .le. Lrx) .and. (pry .le. Lry) .and. (prz .le. Lrz)) then
-            irx = maxloc(rx, dim=1, mask=(rx .le. prx))
-            iry = maxloc(ry, dim=1, mask=(ry .le. pry))
-            irz = maxloc(rz, dim=1, mask=(rz .le. prz))
-            iy = maxloc(y, dim=1, mask=(y .le. pyc))
+            ! irx = maxloc(rx, dim=1, mask=(rx .le. prx))
+            ! iry = maxloc(ry, dim=1, mask=(ry .le. pry))
+            ! irz = maxloc(rz, dim=1, mask=(rz .le. prz))
+            ! iy = maxloc(y, dim=1, mask=(y .le. pyc))
+            irx = int(prx / drx)+1
+            iry = int(pry / dry)+1
+            irz = int(prz / drz)+1
+            iyc = int(pyc / dy)+1
 
             counter(irx, iry, irz, iy) = counter(irx, iry, irz, iy) + 1
 
