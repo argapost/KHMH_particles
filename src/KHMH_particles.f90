@@ -17,9 +17,9 @@ program KHMH_particles
    real(4), parameter :: drz = 0.01
    real(4), parameter :: dy = 0.01
 
-   integer, parameter :: nt = 580
+   integer, parameter :: nt = 350
 
-   integer, parameter :: nprtcls = 5000000
+   integer, parameter :: nprtcls = 2000000
 
    real(4), parameter :: re = 20580.0
    real(4), parameter :: nu = 1./re
@@ -59,8 +59,8 @@ program KHMH_particles
    integer :: rank, size, ierr
    integer :: rstart, rstop, count, remainder, nfiles
 
-   character(100) :: input_fn = "5mrandom"
-   character(100) :: output_fn = "5mrandom"
+   character(100) :: input_fn = "2mrandom"
+   character(100) :: output_fn = "2mrandom"
    character(100) :: case_fn = "re9502pipi."
    character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
@@ -173,10 +173,14 @@ program KHMH_particles
          pyc = (py(ip2) + py(ip1))/2
 
          if ((prx .le. Lrx) .and. (pry .le. Lry) .and. (prz .le. Lrz)) then
-            irx = maxloc(rx, dim=1, mask=(rx .le. prx))
-            iry = maxloc(ry, dim=1, mask=(ry .le. pry))
-            irz = maxloc(rz, dim=1, mask=(rz .le. prz))
-            iy = maxloc(y, dim=1, mask=(y .le. pyc))
+            ! irx = maxloc(rx, dim=1, mask=(rx .le. prx))
+            ! iry = maxloc(ry, dim=1, mask=(ry .le. pry))
+            ! irz = maxloc(rz, dim=1, mask=(rz .le. prz))
+            ! iy = maxloc(y, dim=1, mask=(y .le. pyc))
+            irx = int(prx / drx) + 1
+            iry = int(pry / dry) + 1
+            irz = int(prz / drz) + 1
+            iy = int(pyc / dy) + 1
 
             counter(irx, iry, irz, iy) = counter(irx, iry, irz, iy) + 1
 
