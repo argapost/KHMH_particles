@@ -15,7 +15,7 @@ MODDIR = ./mod
 SRCDIR = ./src
 
 ### List of all files for the main code
-SRC = $(SRCDIR)/KHMH_particles.f90 $(SRCDIR)/load_timestep.f90 $(SRCDIR)/save.f90 
+SRC = $(SRCDIR)/KHMH_particles.f90 $(SRCDIR)/load_1st_timestep.f90 $(SRCDIR)/load_timestep.f90 $(SRCDIR)/save.f90 
 OBJ = $(SRC:%.f90=%.o)
 
 ###### OPTIONS settins ########

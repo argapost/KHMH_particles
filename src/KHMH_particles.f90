@@ -17,18 +17,19 @@ program KHMH_particles
    real(4), parameter :: drz = 0.01
    real(4), parameter :: dy = 0.01
 
-   integer, parameter :: nt = 350
+   integer, parameter :: nt = 10
 
-   integer, parameter :: nprtcls = 2000000
+   integer, parameter :: nprtcls = 200000
 
    real(4), parameter :: re = 20580.0
    real(4), parameter :: nu = 1./re
 
    real(4) :: Lrx, Lry, Lrz, rx(nrx), ry(nry), rz(nrz), y(ny)
-   real(4) :: prx, pry, prz, pyc
+   real(4) :: prx_0, pry_0, prz_0, pyc_0
    integer :: irx, iry, irz, iy
 
    real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls)
+   real(4) :: px_0(nprtcls), py_0(nprtcls), pz_0(nprtcls)
    real(4) :: pufl(nprtcls), pu(nprtcls), pum(nprtcls), pv(nprtcls), pw(nprtcls), peps(nprtcls)
    real(4) :: pdudx(nprtcls), pdvdx(nprtcls), pdwdx(nprtcls), pdpdx(nprtcls)
    real(4) :: pdudy(nprtcls), pdvdy(nprtcls), pdwdy(nprtcls), pdpdy(nprtcls)
@@ -38,9 +39,11 @@ program KHMH_particles
    real(4) :: pdudzdz(nprtcls), pdvdzdz(nprtcls), pdwdzdz(nprtcls)
    real(4) :: pdumdy(nprtcls), pduvdy(nprtcls), pdvvdy(nprtcls)
    real(4) :: pdudt(nprtcls), pdvdt(nprtcls), pdwdt(nprtcls)
+   real(4) :: time
 
    real(4), allocatable, dimension(:, :, :, :)  :: Dt, Tr, Ty, Trm, Tym, Tx, Tz, Rs, Tp, Dr, Dc, Dis, duidui, counter
    real(4), allocatable, dimension(:, :, :, :)  :: Tr_I, Tr_H
+   real(4), allocatable, dimension(:, :, :, :)  :: prx, pry, prz, pyc
    real(4) :: Tr_tp(3, 3), Ty_tp(3, 3), D_tp(3, 3, 3), Trm_tp(3, 3), Tym_tp(3, 3), Tx_tp(3, 3), Tz_tp(3, 3), Rs_tp(3, 3)
    real(4) :: du(3), us(3), dum, usm
 
@@ -58,9 +61,10 @@ program KHMH_particles
 
    integer :: rank, size, ierr
    integer :: rstart, rstop, count, remainder, nfiles
+   integer :: ncid_save
 
-   character(100) :: input_fn = "2mrandom"
-   character(100) :: output_fn = "2mrandom"
+   character(100) :: input_fn = "200000random_O3"
+   character(100) :: output_fn = "200000random_trace"
    character(100) :: case_fn = "re9502pipi."
    character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
@@ -139,10 +143,10 @@ program KHMH_particles
    allocate (Dc(nrx, nry, nrz, ny))
    allocate (Tr_I(nrx, nry, nrz, ny))
    allocate (Tr_H(nrx, nry, nrz, ny))
-
-   Dis = 0.; counter = 0.; duidui = 0.; Rs = 0.; 
-   Dt = 0.; Tp = 0.; Tr = 0.; Trm = 0.; Ty = 0.; Tym = 0.; Dr = 0.; Dc = 0.
-   Tr_I = 0.; Tr_H = 0.
+   allocate (prx(nrx, nry, nrz, ny))
+   allocate (pry(nrx, nry, nrz, ny))
+   allocate (prz(nrx, nry, nrz, ny))
+   allocate (pyc(nrx, nry, nrz, ny))
 
    if (rank == 0) then
       CALL CPU_TIME(t1)
@@ -151,38 +155,50 @@ program KHMH_particles
       CALL SYSTEM_CLOCK(COUNT=nb_periodes_initial)
    end if
 
+   call load_1st_timestep(px_0, py_0, pz_0, &
+                          nprtcls, 1, input_fn)
+
    ! MPI parallel in time
    do it = rstart, rstop
 
-      print *, "Timestep = ", it
+      ! Initialise
+      Dis = 0.; counter = 0.; duidui = 0.; Rs = 0.; 
+      Dt = 0.; Tp = 0.; Tr = 0.; Trm = 0.; Ty = 0.; Tym = 0.; Dr = 0.; Dc = 0.
+      Tr_I = 0.; Tr_H = 0.
+      prx = 0.; pry = 0.; prz = 0.; pyc = 0.
+
       call load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                          pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
                          pdudxdx, pdudydy, pdudzdz, pdvdxdx, pdvdydy, pdvdzdz, &
                          pdwdxdx, pdwdydy, pdwdzdz, peps, pdpdx, pdpdy, pdpdz, &
                          pdumdy, pduvdy, pdvvdy, pufl, pdudt, pdvdt, pdwdt, &
-                         nprtcls, it, input_fn)
+                         nprtcls, time, it, input_fn)
+      print *, "Timestep = ", it, " time ", time
+
       pum = pu - pufl
 
-!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx,pry,prz,pyc,irx,iry,irz,iy,du,us,dum,usm,Tr_tp,Ty_tp,Trm_tp,Tym_tp,Tx_tp,Tz_tp,Rs_tp,D_tp)
+!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0,irx,iry,irz,iy,du,us,dum,usm,Tr_tp,Ty_tp,Trm_tp,Tym_tp,Tx_tp,Tz_tp,Rs_tp,D_tp)
 !$OMP DO
       do ip1 = 1, nprtcls
       do ip2 = ip1 + 1, nprtcls
-         prx = ABS(px(ip2) - px(ip1))
-         pry = ABS(py(ip2) - py(ip1))
-         prz = ABS(pz(ip2) - pz(ip1))
-         pyc = (py(ip2) + py(ip1))/2
 
-         if ((prx .le. Lrx) .and. (pry .le. Lry) .and. (prz .le. Lrz)) then
-            ! irx = maxloc(rx, dim=1, mask=(rx .le. prx))
-            ! iry = maxloc(ry, dim=1, mask=(ry .le. pry))
-            ! irz = maxloc(rz, dim=1, mask=(rz .le. prz))
-            ! iy = maxloc(y, dim=1, mask=(y .le. pyc))
-            irx = int(prx / drx) + 1
-            iry = int(pry / dry) + 1
-            irz = int(prz / drz) + 1
-            iy = int(pyc / dy) + 1
+         prx_0 = ABS(px_0(ip2) - px_0(ip1))
+         pry_0 = ABS(py_0(ip2) - py_0(ip1))
+         prz_0 = ABS(pz_0(ip2) - pz_0(ip1))
+         pyc_0 = (py_0(ip2) + py_0(ip1))/2
+
+         if ((prx_0 .le. Lrx) .and. (pry_0 .le. Lry) .and. (prz_0 .le. Lrz)) then
+            irx = int(prx_0/drx) + 1
+            iry = int(pry_0/dry) + 1
+            irz = int(prz_0/drz) + 1
+            iy = int(pyc_0/dy) + 1
 
             counter(irx, iry, irz, iy) = counter(irx, iry, irz, iy) + 1
+
+            prx(irx, iry, irz, iy) = prx(irx, iry, irz, iy) + ABS(px(ip2) - px(ip1))
+            pry(irx, iry, irz, iy) = pry(irx, iry, irz, iy) + ABS(py(ip2) - py(ip1))
+            prz(irx, iry, irz, iy) = prz(irx, iry, irz, iy) + ABS(pz(ip2) - pz(ip1))
+            pyc(irx, iry, irz, iy) = pyc(irx, iry, irz, iy) + (py(ip2) + py(ip1))/2
 
             dum = pum(ip2) - pum(ip1)
             usm = pum(ip2) + pum(ip1)
@@ -383,56 +399,18 @@ program KHMH_particles
 !$OMP END PARALLEL
       !ENDOPENMP
 
-   end do
-
-   call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
-   do iy = 1, ny
-      if (rank == 0) then
-         call MPI_REDUCE(MPI_IN_PLACE, duidui(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Tr(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Tr_I(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Tr_H(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Trm(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Ty(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Tym(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Tx(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Tz(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Rs(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Tp(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Dr(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Dc(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Dt(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, Dis(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(MPI_IN_PLACE, counter(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-      else
-         call MPI_REDUCE(duidui(:, :, :, iy), duidui(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Tr(:, :, :, iy), Tr(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Tr_I(:, :, :, iy), Tr_I(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Tr_H(:, :, :, iy), Tr_H(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Trm(:, :, :, iy), Trm(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Ty(:, :, :, iy), Ty(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Tym(:, :, :, iy), Tym(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Tx(:, :, :, iy), Tx(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Tz(:, :, :, iy), Tz(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Rs(:, :, :, iy), Rs(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Tp(:, :, :, iy), Tp(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Dr(:, :, :, iy), Dr(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Dc(:, :, :, iy), Dc(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Dt(:, :, :, iy), Dt(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(Dis(:, :, :, iy), Dis(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-         call MPI_REDUCE(counter(:, :, :, iy), counter(:, :, :, iy), nrx*nry*nrz, MPI_REAL, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-      end if
-   end do
-
-   call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
-   if (rank .eq. 0) then
       call save_terms(nrx, nry, nrz, ny, rx, ry, rz, y, &
                       Dt, Tr, Ty, Trm, Tym, Tx, Tz, Rs, &
                       Tp, Dr, Dc, Dis, duidui, counter, &
-                      Tr_I, Tr_H, output_fn)
-   end if
+                      Tr_I, Tr_H, prx, pry, prz, pyc, &
+                      time, it, ncid_save, output_fn)
+
+   end do
+
+   call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+   ! close netcdf
+   call io_check(nf90_close(ncid_save))
 
    CALL CPU_TIME(t2)
    CALL SYSTEM_CLOCK(COUNT=nb_periodes_final)
