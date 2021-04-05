@@ -180,7 +180,7 @@ program KHMH_particles
             irx = int(prx / drx)+1
             iry = int(pry / dry)+1
             irz = int(prz / drz)+1
-            iyc = int(pyc / dy)+1
+            iy = int(pyc / dy)+1
 
             counter(irx, iry, irz, iy) = counter(irx, iry, irz, iy) + 1
 
