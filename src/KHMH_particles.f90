@@ -47,7 +47,7 @@ program KHMH_particles
    real(4) :: Tr_tp(3, 3), Ty_tp(3, 3), D_tp(3, 3, 3), Trm_tp(3, 3), Tym_tp(3, 3), Tx_tp(3, 3), Tz_tp(3, 3), Rs_tp(3, 3)
    real(4) :: du(3), us(3), dum, usm
 
-   integer :: ncid, varid(1)
+   integer :: ncid, varid(1), varid_o(21)
    integer ::  ip1, ip2, i, it
    integer :: nb_procs, OMP_GET_NUM_THREADS
 
@@ -157,6 +157,11 @@ program KHMH_particles
 
    call load_1st_timestep(px_0, py_0, pz_0, &
                           nprtcls, 1, input_fn)
+
+   call open_ncdf(nrx, nry, nrz, ny, nt, &
+                  rx, ry, rz, y, ncid_save, varid_o, output_fn)
+
+   call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
    ! MPI parallel in time
    do it = rstart, rstop
@@ -403,7 +408,7 @@ program KHMH_particles
                       Dt, Tr, Ty, Trm, Tym, Tx, Tz, Rs, &
                       Tp, Dr, Dc, Dis, duidui, counter, &
                       Tr_I, Tr_H, prx, pry, prz, pyc, &
-                      time, it, ncid_save, output_fn)
+                      time, it, ncid_save, varid_o, output_fn)
 
    end do
 
