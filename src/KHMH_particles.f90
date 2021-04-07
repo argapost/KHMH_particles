@@ -187,13 +187,13 @@ program KHMH_particles
             dum = pum(ip2) - pum(ip1)
             usm = pum(ip2) + pum(ip1)
 
-            du(1) = pu(ip2) - pu(ip1)
-            du(2) = pv(ip2) - pv(ip1)
-            du(3) = pw(ip2) - pw(ip1)
+            du(1) = pufl(ip2) - pufl(ip1)
+            du(2) = pvfl(ip2) - pvfl(ip1)
+            du(3) = pwfl(ip2) - pwfl(ip1)
 
-            us(1) = pu(ip2) + pu(ip1)
-            us(2) = pv(ip2) + pv(ip1)
-            us(3) = pw(ip2) + pw(ip1)
+            us(1) = pufl(ip2) + pufl(ip1)
+            us(2) = pvfl(ip2) + pvfl(ip1)
+            us(3) = pwfl(ip2) + pwfl(ip1)
 
             duidui(irx, iry, irz, iy) = duidui(irx, iry, irz, iy) + du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
 
@@ -221,34 +221,34 @@ program KHMH_particles
                                     + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
 
             ! Non-linear term (inhomogeneous fluctuation part) :   d/drj [duj*(ui1^2 + ui2^2)]   (with dui = ui1 - ui2)
-            Tr_tp(1, 1) = du(1)*(pu(ip2)*pdudx(ip2) - pu(ip1)*pdudx(ip1)) ! (u_1-u_2)*(u_1*du/dx_1 - u_2*du/dx_2)
-            Tr_tp(1, 2) = du(2)*(pu(ip2)*pdudy(ip2) - pu(ip1)*pdudy(ip1)) ! (v_1-v_2)*(u_1*du/dy_1 - u_2*du/dy_2)
-            Tr_tp(1, 3) = du(3)*(pu(ip2)*pdudz(ip2) - pu(ip1)*pdudz(ip1)) ! (w_1-w_2)*(u_1*du/dz_1 - u_2*du/dz_2)
+            Tr_tp(1, 1) = du(1)*(pufl(ip2)*pdudx(ip2) - pufl(ip1)*pdudx(ip1)) ! (u_1-u_2)*(u_1*du/dx_1 - u_2*du/dx_2)
+            Tr_tp(1, 2) = du(2)*(pufl(ip2)*pdudy(ip2) - pufl(ip1)*pdudy(ip1)) ! (v_1-v_2)*(u_1*du/dy_1 - u_2*du/dy_2)
+            Tr_tp(1, 3) = du(3)*(pufl(ip2)*pdudz(ip2) - pufl(ip1)*pdudz(ip1)) ! (w_1-w_2)*(u_1*du/dz_1 - u_2*du/dz_2)
 
-            Tr_tp(2, 1) = du(1)*(pv(ip2)*pdvdx(ip2) - pv(ip1)*pdvdx(ip1)) ! (u_1-u_2)*(v_1*dv/dx_1 - v_2*dv/dx_2)
-            Tr_tp(2, 2) = du(2)*(pv(ip2)*pdvdy(ip2) - pv(ip1)*pdvdy(ip1))
-            Tr_tp(2, 3) = du(3)*(pv(ip2)*pdvdz(ip2) - pv(ip1)*pdvdz(ip1))
+            Tr_tp(2, 1) = du(1)*(pvfl(ip2)*pdvdx(ip2) - pvfl(ip1)*pdvdx(ip1)) ! (u_1-u_2)*(v_1*dv/dx_1 - v_2*dv/dx_2)
+            Tr_tp(2, 2) = du(2)*(pvfl(ip2)*pdvdy(ip2) - pvfl(ip1)*pdvdy(ip1))
+            Tr_tp(2, 3) = du(3)*(pvfl(ip2)*pdvdz(ip2) - pvfl(ip1)*pdvdz(ip1))
 
-            Tr_tp(3, 1) = du(1)*(pw(ip2)*pdwdx(ip2) - pw(ip1)*pdwdx(ip1))
-            Tr_tp(3, 2) = du(2)*(pw(ip2)*pdwdy(ip2) - pw(ip1)*pdwdy(ip1))
-            Tr_tp(3, 3) = du(3)*(pw(ip2)*pdwdz(ip2) - pw(ip1)*pdwdz(ip1))
+            Tr_tp(3, 1) = du(1)*(pwfl(ip2)*pdwdx(ip2) - pwfl(ip1)*pdwdx(ip1))
+            Tr_tp(3, 2) = du(2)*(pwfl(ip2)*pdwdy(ip2) - pwfl(ip1)*pdwdy(ip1))
+            Tr_tp(3, 3) = du(3)*(pwfl(ip2)*pdwdz(ip2) - pwfl(ip1)*pdwdz(ip1))
 
             Tr_I(irx, iry, irz, iy) = Tr_I(irx, iry, irz, iy) + Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
                                       + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
                                       + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
 
             ! Non-linear term in scale (homogeneous fluctuation part) :  -2 d/drj [duj*(ui1*ui2]   (with dui = ui1 - ui2)
-            Tr_tp(1, 1) = -du(1)*(pu(ip1)*pdudx(ip2) - pu(ip2)*pdudx(ip1)) ! (u_1-u_2)*(u_1*du/dx_2 - u_2*du/dx_1)
-            Tr_tp(1, 2) = -du(2)*(pu(ip1)*pdudy(ip2) - pu(ip2)*pdudy(ip1)) ! (v_1-v_2)*(u_1*du/dy_2 - u_2*du/dy_1)
-            Tr_tp(1, 3) = -du(3)*(pu(ip1)*pdudz(ip2) - pu(ip2)*pdudz(ip1))
+            Tr_tp(1, 1) = -du(1)*(pufl(ip1)*pdudx(ip2) - pufl(ip2)*pdudx(ip1)) ! (u_1-u_2)*(u_1*du/dx_2 - u_2*du/dx_1)
+            Tr_tp(1, 2) = -du(2)*(pufl(ip1)*pdudy(ip2) - pufl(ip2)*pdudy(ip1)) ! (v_1-v_2)*(u_1*du/dy_2 - u_2*du/dy_1)
+            Tr_tp(1, 3) = -du(3)*(pufl(ip1)*pdudz(ip2) - pufl(ip2)*pdudz(ip1))
 
-            Tr_tp(2, 1) = -du(1)*(pv(ip1)*pdvdx(ip2) - pv(ip2)*pdvdx(ip1)) ! (u_1-u_2)*(v_1*dv/dx_2 - v_2*dv/dx_1
-            Tr_tp(2, 2) = -du(2)*(pv(ip1)*pdvdy(ip2) - pv(ip2)*pdvdy(ip1))
-            Tr_tp(2, 3) = -du(3)*(pv(ip1)*pdvdz(ip2) - pv(ip2)*pdvdz(ip1))
+            Tr_tp(2, 1) = -du(1)*(pvfl(ip1)*pdvdx(ip2) - pvfl(ip2)*pdvdx(ip1)) ! (u_1-u_2)*(v_1*dv/dx_2 - v_2*dv/dx_1
+            Tr_tp(2, 2) = -du(2)*(pvfl(ip1)*pdvdy(ip2) - pvfl(ip2)*pdvdy(ip1))
+            Tr_tp(2, 3) = -du(3)*(pvfl(ip1)*pdvdz(ip2) - pvfl(ip2)*pdvdz(ip1))
 
-            Tr_tp(3, 1) = -du(1)*(pw(ip1)*pdwdx(ip2) - pw(ip2)*pdwdx(ip1))
-            Tr_tp(3, 2) = -du(2)*(pw(ip1)*pdwdy(ip2) - pw(ip2)*pdwdy(ip1))
-            Tr_tp(3, 3) = -du(3)*(pw(ip1)*pdwdz(ip2) - pw(ip2)*pdwdz(ip1))
+            Tr_tp(3, 1) = -du(1)*(pwfl(ip1)*pdwdx(ip2) - pwfl(ip2)*pdwdx(ip1))
+            Tr_tp(3, 2) = -du(2)*(pwfl(ip1)*pdwdy(ip2) - pwfl(ip2)*pdwdy(ip1))
+            Tr_tp(3, 3) = -du(3)*(pwfl(ip1)*pdwdz(ip2) - pwfl(ip2)*pdwdz(ip1))
 
             Tr_H(irx, iry, irz, iy) = Tr_H(irx, iry, irz, iy) + Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
                                       + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
