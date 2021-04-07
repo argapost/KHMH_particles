@@ -208,13 +208,13 @@ program KHMH_particles
             dum = pum(ip2) - pum(ip1)
             usm = pum(ip2) + pum(ip1)
 
-            du(1) = pu(ip2) - pu(ip1)
-            du(2) = pv(ip2) - pv(ip1)
-            du(3) = pw(ip2) - pw(ip1)
+            du(1) = pufl(ip2) - pufl(ip1)
+            du(2) = pvfl(ip2) - pvfl(ip1)
+            du(3) = pwfl(ip2) - pwfl(ip1)
 
-            us(1) = pu(ip2) + pu(ip1)
-            us(2) = pv(ip2) + pv(ip1)
-            us(3) = pw(ip2) + pw(ip1)
+            us(1) = pufl(ip2) + pufl(ip1)
+            us(2) = pvfl(ip2) + pvfl(ip1)
+            us(3) = pwfl(ip2) + pwfl(ip1)
 
             duidui(irx, iry, irz, iy) = duidui(irx, iry, irz, iy) + du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
 
