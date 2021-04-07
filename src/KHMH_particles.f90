@@ -17,7 +17,7 @@ program KHMH_particles
    real(4), parameter :: drz = 0.01
    real(4), parameter :: dy = 0.01
 
-   integer, parameter :: nt = 350
+   integer, parameter :: nt = 400
 
    integer, parameter :: nprtcls = 2000000
 
