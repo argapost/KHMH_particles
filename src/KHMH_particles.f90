@@ -7,19 +7,19 @@ program KHMH_particles
 
   ! real(4), external :: interpolate
 
-  integer, parameter :: nrx = 51, nrx_2 = int(nrx/2)
-  integer, parameter :: nry = 51, nry_2 = int(nry/2)
-  integer, parameter :: nrz = 31, nrz_2 = int(nrz/2)
-  integer, parameter :: ny = 51
-  integer, parameter :: nduidui = 51
-  integer, parameter :: nTr = 51, nTr_2 = int(nTr/2)
+  integer, parameter :: nrx = 61, nrx_2 = int(nrx/2)
+  integer, parameter :: nry = 61, nry_2 = int(nry/2)
+  integer, parameter :: nrz = 51, nrz_2 = int(nrz/2)
+  integer, parameter :: ny = 61
+  integer, parameter :: nduidui = 61
+  integer, parameter :: nTr = 61, nTr_2 = int(nTr/2)
 
   real(4), parameter :: drx = 0.02
   real(4), parameter :: dry = 0.02
   real(4), parameter :: drz = 0.02
-  real(4), parameter :: dy = 0.04
-  real(4), parameter :: dTr = 0.04
-  real(4), parameter :: dduidui = 0.04
+  real(4), parameter :: dy = 0.0166
+  real(4), parameter :: dduidui = 0.00073
+  real(4), parameter :: dTr = 0.0013
 
   integer, parameter :: nt = 300
 
@@ -190,8 +190,7 @@ program KHMH_particles
       pyc = (py(ip2) + py(ip1))/2
 
       if ((abs(prx_0) .le. Lrx) .and. (abs(pry_0) .le. Lry) .and. (abs(prz_0) .le. Lrz) .and. &
-          (abs(prx) .le. Lrx) .and. (abs(pry) .le. Lry) .and. (abs(prz) .le. Lrz) .and. (pyc .lt. 1.0) .and. &
-          (abs(Tr) .le. grid_Tr(nTr_2)) ) then
+          (abs(prx) .le. Lrx) .and. (abs(pry) .le. Lry) .and. (abs(prz) .le. Lrz) .and. (pyc .lt. 1.0)) then
 
         pyc_0 = (py_0(ip2) + py_0(ip1))/2
 
