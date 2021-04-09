@@ -155,9 +155,11 @@ program KHMH_particles
     CALL SYSTEM_CLOCK(COUNT=nb_periodes_initial)
   end if
 
+  ! Open the first time step and keep the position of particles in memory to check
   call load_1st_timestep(px_0, py_0, pz_0, &
                          nprtcls, 1, input_fn)
 
+  ! Open netcdf for saving
   call open_ncdf(nrx, nry, nrz, ny, nt, &
                  rx, ry, rz, y, ncid_save, varid_o, output_fn)
 
@@ -172,6 +174,7 @@ program KHMH_particles
     Tr_I = 0.; Tr_H = 0.
     prx = 0.; pry = 0.; prz = 0.; pyc = 0.
 
+    ! Load particles and the interpolated fields at given timestep
     call load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                        pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
                        pdudxdx, pdudydy, pdudzdz, pdvdxdx, pdvdydy, pdvdzdz, &
@@ -187,11 +190,13 @@ program KHMH_particles
     do ip1 = 1, nprtcls
     do ip2 = ip1 + 1, nprtcls
 
+      ! Compute rx,ry,rz for t=0 for given ip1,ip2 -> This is done by every processor 
       prx_0 = ABS(px_0(ip2) - px_0(ip1))
       pry_0 = ABS(py_0(ip2) - py_0(ip1))
       prz_0 = ABS(pz_0(ip2) - pz_0(ip1))
       pyc_0 = (py_0(ip2) + py_0(ip1))/2
-
+      
+      ! Check if in the beginning this particle pair ip1,ip2 was out of the domain
       if ((prx_0 .le. Lrx) .and. (pry_0 .le. Lry) .and. (prz_0 .le. Lrz)) then
         irx = int(prx_0/drx) + 1
         iry = int(pry_0/dry) + 1
