@@ -13,6 +13,7 @@ program KHMH_particles
   integer, parameter :: ny = 61
   integer, parameter :: nduidui = 71
   integer, parameter :: nTr = 71, nTr_2 = int(nTr/2)
+  integer :: nduidui_uni, nTr_uni, nTr_2_uni
 
   real(4), parameter :: drx = 0.02
   real(4), parameter :: dry = 0.02
@@ -20,6 +21,9 @@ program KHMH_particles
   real(4), parameter :: dy = 0.0166
   real(4), parameter :: dduidui = 0.0007
   real(4), parameter :: dTr = 0.0003
+  real(4), parameter :: mTr = 0.003
+  real(4), parameter :: mduidui = 0.015
+  real(4) :: dduidui_uni, dTr_uni
 
   integer, parameter :: nt = 300
 
@@ -30,6 +34,8 @@ program KHMH_particles
 
   real(4) :: Lrx, Lry, Lrz, y(ny)
   real(4), allocatable, dimension(:) :: rx, ry, rz, grid_Tr, grid_duidui
+  real(4), allocatable, dimension(:) :: grid_duidui_uni, grid_Tr_uni
+  integer, allocatable, dimension(:) :: map_duidui, map_Tr
   real(4) :: prx_0, pry_0, prz_0, pyc_0
   integer :: irx, iry, irz, iy, irxf, iryf, irzf, iyf, iduidui, iTr
 
@@ -125,16 +131,57 @@ program KHMH_particles
   Lry = ry(nry_2)
   Lrz = rz(nrz_2)
 
+  ! allocate (grid_duidui(nduidui))
+  ! allocate (grid_Tr(-nTr_2:nTr_2))
+  ! grid_duidui = (/(i*dduidui, i=0, nduidui - 1)/)
+  ! grid_Tr = (/(i*dTr, i=-nTr_2, nTr_2)/)
+  grid_duidui = 0.
+  grid_Tr = 0.
   allocate (grid_duidui(nduidui))
-  allocate (grid_Tr(-nTr_2:nTr_2))
-  grid_duidui = (/(i*dduidui, i=0, nduidui - 1)/)
-  grid_Tr = (/(i*dTr, i=-nTr_2, nTr_2)/)
+  allocate (grid_Tr(nTr))
+
+  ! Create non uniform grid
+  call non_uniform_grid(nduidui, grid_Tr, mduidui, .FALSE., 2.2)
+  call non_uniform_grid(nTr, grid_Tr, mTr, .TRUE., 2.3)
+
+  ! Create uniform grid with 1/3 of the smallest delta in the non uniform grid
+  ! to map it afterwards in the non uniform grid
+  dduidui_uni = grid_duidui(2) / 3
+  nduidui_uni = int(mduidui / dduidui_uni) + 1
+  allocate (grid_duidui_uni(nduidui_uni))
+  grid_duidui_uni =  (/(i*dduidui_uni, i=0, nduidui_uni-1)/)
+
+  dTr_uni = grid_Tr(nTr_2 + 2) / 3
+  nTr_uni = int((2*mTr) / dTr_uni) + 1
+  allocate (grid_Tr_uni(nTr_uni))
+  nTr_2_uni = int(nTr_uni / 2)
+  i = 1
+  grid_Tr_uni(i) = -mTr
+  do while(grid_Tr_uni(i) + dTr_uni <= mTr)
+    i = i + 1
+    grid_Tr_uni(i) = grid_Tr_uni(i-1) + dTr_uni
+  enddo
+
+  ! Map uniform to non uniform grid
+  allocate (map_duidui(nduidui_uni))
+  map_duidui = 1
+  do i=2, nduidui_uni
+    map_duidui(i) = minloc(abs(grid_duidui - grid_duidui_uni(i)), dim=1)
+  enddo
+
+  allocate (map_Tr(nTr_uni))
+  map_Tr = 1
+  do i=2, nTr_uni
+    map_Tr(i) = minloc(abs(grid_Tr - grid_Tr_uni(i)), dim=1)
+  enddo
 
   if (rank == 0) then
     print *, Lrx, Lry, Lrz, y(ny)
     print *, rx(-nrx_2), ry(-nry_2), rz(-nrz_2)
     print *, grid_duidui(1), grid_duidui(nduidui)
-    print *, grid_Tr(-nTr_2:nTr_2)
+    print *, grid_duidui_uni(1), grid_duidui_uni(nduidui)
+    print *, grid_Tr(1), grid_Tr(nTr)
+    print *, grid_Tr_uni(1), grid_Tr_uni(nTr)
   end if
 
   allocate (crx(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, -nrx_2:nrx_2))
@@ -143,7 +190,7 @@ program KHMH_particles
   allocate (cyc(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, ny))
 
   allocate (cduidui(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, nduidui))
-  allocate (cTr(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, -nTr_2:nTr_2))
+  allocate (cTr(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, nTr))
 
   if (rank == 0) then
     CALL CPU_TIME(t1)
@@ -223,8 +270,8 @@ program KHMH_particles
 
       duidui = du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
       if (duidui .lt. grid_duidui(nduidui)) then
-        iduidui = nint(duidui/dduidui) + 1
-        cduidui(irx, iry, irz, iy, iduidui) = cduidui(irx, iry, irz, iy, iduidui) + 1
+        iduidui = nint(duidui/dduidui_uni) + 1
+        cduidui(irx, iry, irz, iy, iduidui) = cduidui(irx, iry, irz, iy, map_duidui(iduidui)) + 1
       end if
 
       ! Non-linear term in scale (fluctuation part) :   d/drj [(dui)^2 duj]
@@ -247,9 +294,8 @@ program KHMH_particles
 
       if (abs(Tr) .ge. grid_Tr(nTr_2)) cycle
 
-      iTr = nint(Tr/dTr)
-      cTr(irx, iry, irz, iy, iTr) = cTr(irx, iry, irz, iy, iTr) + 1
-
+      iTr = nint(Tr/dTr_uni) + 1
+      cTr(irx, iry, irz, iy, iTr) = cTr(irx, iry, irz, iy, map_Tr(iTr)) + 1
 
     end do
     end do
@@ -299,3 +345,36 @@ subroutine io_check(status)
   return
 end subroutine io_check
 
+subroutine non_uniform_grid(ngrid, grid, gridlim, divergent, g)
+
+  integer, intent(in) :: ngrid
+  real(4) :: grid(ngrid), gridlim, g
+  logical, intent(in) :: divergent
+
+  integer :: i, n, nh
+  real(4), allocatable, dimension(:) :: temp_grid
+
+  if (divergent .eqv. .TRUE.) then
+    n = ngrid
+  else
+    n = 2*ngrid - 1
+  end if
+  nh = int(n/2)
+
+  allocate (temp_grid(0:n - 1))
+  temp_grid = 0.
+
+  do i = 0, n - 1
+    temp_grid(i) = 1.0 - tanh(g*(1.0 - 2.0*real(i)/(real(n) - 1.0)))/tanh(g)
+  end do
+
+  if (divergent .eqv. .TRUE.) then
+    grid(1:nh + 1) = -temp_grid(nh:0:-1)
+    grid(nh + 2:) = temp_grid(1:nh)
+  else
+    grid = temp_grid(0:nh)
+  end if
+
+  grid = grid*gridlim
+
+end subroutine

@@ -17,7 +17,7 @@ subroutine save_terms(nrx, nry, nrz, ny, nduidui, nTr, &
   real(4), dimension(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, -nrz_2:nrz_2)  :: crz
   real(4), dimension(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, ny)  :: cyc
   real(4), dimension(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, nduidui)  :: cduidui
-  real(4), dimension(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, -nTr_2:nTr_2)  :: cTr
+  real(4), dimension(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, nTr)  :: cTr
   real(4) :: time
 
   startv_o(1) = 1
@@ -60,7 +60,7 @@ subroutine open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
   integer :: nrx, nry, nrz, ny, nduidui, nTr
   integer :: nrx_2, nry_2, nrz_2, nTr_2
   real(4) :: rx(-nrx_2:nrx_2), ry(-nry_2:nry_2), rz(-nrz_2:nrz_2), y(ny)
-  real(4) :: grid_Tr(-nTr_2:nTr_2), grid_duidui(nduidui)
+  real(4) :: grid_Tr(nTr), grid_duidui(nduidui)
 
   integer :: ncid_save
   integer :: varid(7), dimid(7), idgrid_r1, idgrid_r2, idgrid_r3, idgrid_y
