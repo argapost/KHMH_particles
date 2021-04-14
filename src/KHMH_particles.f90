@@ -11,15 +11,15 @@ program KHMH_particles
   integer, parameter :: nry = 61, nry_2 = int(nry/2)
   integer, parameter :: nrz = 51, nrz_2 = int(nrz/2)
   integer, parameter :: ny = 61
-  integer, parameter :: nduidui = 61
-  integer, parameter :: nTr = 61, nTr_2 = int(nTr/2)
+  integer, parameter :: nduidui = 71
+  integer, parameter :: nTr = 71, nTr_2 = int(nTr/2)
 
   real(4), parameter :: drx = 0.02
   real(4), parameter :: dry = 0.02
   real(4), parameter :: drz = 0.02
   real(4), parameter :: dy = 0.0166
-  real(4), parameter :: dduidui = 0.00073
-  real(4), parameter :: dTr = 0.0013
+  real(4), parameter :: dduidui = 0.0007
+  real(4), parameter :: dTr = 0.0003
 
   integer, parameter :: nt = 300
 
@@ -175,70 +175,81 @@ program KHMH_particles
                        nprtcls, time, it, input_fn)
     print *, "Timestep = ", it, " time ", time
 
-!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0,prx,pry,prz,pyc,irx,iry,irz,iy,irxf,iryf,irzf,iyf,du,us,Tr_tp,duidui,iduidui,Tr,iTr)
+!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0,prx,pry,prz,pyc,irx,iry,irz,iy,irxf,iryf,irzf,iyf,du,Tr_tp,duidui,iduidui,Tr,iTr)
 !$OMP DO
     do ip1 = 1, nprtcls
     do ip2 = ip1 + 1, nprtcls
-
       prx_0 = (px_0(ip2) - px_0(ip1))
-      pry_0 = (py_0(ip2) - py_0(ip1))
-      prz_0 = (pz_0(ip2) - pz_0(ip1))
+      if (abs(prx_0) .gt. Lrx) cycle
 
       prx = (px(ip2) - px(ip1))
+      if (abs(prx) .gt. Lrx) cycle
+
+      pry_0 = (py_0(ip2) - py_0(ip1))
+      if (abs(pry_0) .gt. Lry) cycle
+
+      prz_0 = (pz_0(ip2) - pz_0(ip1))
+      if (abs(prz_0) .gt. Lrz) cycle
+
       pry = (py(ip2) - py(ip1))
+      if (abs(pry) .gt. Lry) cycle
+
       prz = (pz(ip2) - pz(ip1))
+      if (abs(prz) .gt. Lrz) cycle
+
       pyc = (py(ip2) + py(ip1))/2
+      if (pyc .gt. 1.0) cycle
 
-      if ((abs(prx_0) .le. Lrx) .and. (abs(pry_0) .le. Lry) .and. (abs(prz_0) .le. Lrz) .and. &
-          (abs(prx) .le. Lrx) .and. (abs(pry) .le. Lry) .and. (abs(prz) .le. Lrz) .and. (pyc .lt. 1.0)) then
+      pyc_0 = (py_0(ip2) + py_0(ip1))/2
 
-        pyc_0 = (py_0(ip2) + py_0(ip1))/2
+      irx = nint(prx_0/drx)
+      iry = nint(pry_0/dry)
+      irz = nint(prz_0/drz)
+      iy = nint(pyc_0/dy) + 1
 
-        irx = nint(prx_0/drx)
-        iry = nint(pry_0/dry)
-        irz = nint(prz_0/drz)
-        iy = nint(pyc_0/dy) + 1
+      irxf = nint(prx/drx)
+      iryf = nint(pry/dry)
+      irzf = nint(prz/drz)
+      iyf = nint(pyc/dy) + 1
 
-        irxf = nint(prx/drx)
-        iryf = nint(pry/dry)
-        irzf = nint(prz/drz)
-        iyf = nint(pyc/dy) + 1
+      crx(irx, iry, irz, iy, irxf) = crx(irx, iry, irz, iy, irxf) + 1
+      cry(irx, iry, irz, iy, iryf) = cry(irx, iry, irz, iy, iryf) + 1
+      crz(irx, iry, irz, iy, irzf) = crz(irx, iry, irz, iy, irzf) + 1
+      cyc(irx, iry, irz, iy, iyf) = cyc(irx, iry, irz, iy, iyf) + 1
 
-        crx(irx, iry, irz, iy, irxf) = crx(irx, iry, irz, iy, irxf) + 1
-        cry(irx, iry, irz, iy, iryf) = cry(irx, iry, irz, iy, iryf) + 1
-        crz(irx, iry, irz, iy, irzf) = crz(irx, iry, irz, iy, irzf) + 1
-        cyc(irx, iry, irz, iy, iyf) = cyc(irx, iry, irz, iy, iyf) + 1
+      du(1) = pufl(ip2) - pufl(ip1)
+      du(2) = pv(ip2) - pv(ip1)
+      du(3) = pw(ip2) - pw(ip1)
 
-        du(1) = pufl(ip2) - pufl(ip1)
-        du(2) = pv(ip2) - pv(ip1)
-        du(3) = pw(ip2) - pw(ip1)
-
-        duidui = du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
+      duidui = du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
+      if (duidui .lt. grid_duidui(nduidui)) then
         iduidui = nint(duidui/dduidui) + 1
         cduidui(irx, iry, irz, iy, iduidui) = cduidui(irx, iry, irz, iy, iduidui) + 1
-
-        ! Non-linear term in scale (fluctuation part) :   d/drj [(dui)^2 duj]
-
-        Tr_tp(1, 1) = du(1)*du(1)*(pdudx(ip2) + pdudx(ip1))  ! 0.5*(u_1-u_2)*(u_1-u_2)*(du/dx_1 + du/dx_2)
-        Tr_tp(1, 2) = du(1)*du(2)*(pdudy(ip2) + pdudy(ip1))  ! 0.5*(u_1-u_2)*(v_1-v_2)*(du/dy_1 + du/dy_2)
-        Tr_tp(1, 3) = du(1)*du(3)*(pdudz(ip2) + pdudz(ip1))  ! 0.5*(u_1-u_2)*(w_1-w_2)*(du/dz_1 + du/dz_2)
-
-        Tr_tp(2, 1) = du(2)*du(1)*(pdvdx(ip2) + pdvdx(ip1))  ! 0.5*(v_1-v_2)*(u_1-u_2)*(dv/dx_1 + dv/dx_2)
-        Tr_tp(2, 2) = du(2)*du(2)*(pdvdy(ip2) + pdvdy(ip1))  ! 0.5*(v_1-v_2)*(v_1-v_2)*(dv/dy_1 + dv/dy_2)
-        Tr_tp(2, 3) = du(2)*du(3)*(pdvdz(ip2) + pdvdz(ip1))  ! 0.5*(v_1-v_2)*(w_1-w_2)*(dv/dz_1 + dv/dz_2)
-
-        Tr_tp(3, 1) = du(3)*du(1)*(pdwdx(ip2) + pdwdx(ip1))  ! 0.5*(w_1-w_2)*(u_1-u_2)*(dw/dx_1 + dw/dx_2)
-        Tr_tp(3, 2) = du(3)*du(2)*(pdwdy(ip2) + pdwdy(ip1))  ! 0.5*(w_1-w_2)*(v_1-v_2)*(dw/dy_1 + dw/dy_2)
-        Tr_tp(3, 3) = du(3)*du(3)*(pdwdz(ip2) + pdwdz(ip1))  ! 0.5*(w_1-w_2)*(w_1-w_2)*(dw/dz_1 + dw/dz_2)
-
-        Tr = Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
-             + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
-             + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
-
-        iTr = nint(Tr/dTr)
-        cTr(irx, iry, irz, iy, iTr) = cTr(irx, iry, irz, iy, iTr) + 1
-
       end if
+
+      ! Non-linear term in scale (fluctuation part) :   d/drj [(dui)^2 duj]
+
+      Tr_tp(1, 1) = du(1)*du(1)*(pdudx(ip2) + pdudx(ip1))  ! 0.5*(u_1-u_2)*(u_1-u_2)*(du/dx_1 + du/dx_2)
+      Tr_tp(1, 2) = du(1)*du(2)*(pdudy(ip2) + pdudy(ip1))  ! 0.5*(u_1-u_2)*(v_1-v_2)*(du/dy_1 + du/dy_2)
+      Tr_tp(1, 3) = du(1)*du(3)*(pdudz(ip2) + pdudz(ip1))  ! 0.5*(u_1-u_2)*(w_1-w_2)*(du/dz_1 + du/dz_2)
+
+      Tr_tp(2, 1) = du(2)*du(1)*(pdvdx(ip2) + pdvdx(ip1))  ! 0.5*(v_1-v_2)*(u_1-u_2)*(dv/dx_1 + dv/dx_2)
+      Tr_tp(2, 2) = du(2)*du(2)*(pdvdy(ip2) + pdvdy(ip1))  ! 0.5*(v_1-v_2)*(v_1-v_2)*(dv/dy_1 + dv/dy_2)
+      Tr_tp(2, 3) = du(2)*du(3)*(pdvdz(ip2) + pdvdz(ip1))  ! 0.5*(v_1-v_2)*(w_1-w_2)*(dv/dz_1 + dv/dz_2)
+
+      Tr_tp(3, 1) = du(3)*du(1)*(pdwdx(ip2) + pdwdx(ip1))  ! 0.5*(w_1-w_2)*(u_1-u_2)*(dw/dx_1 + dw/dx_2)
+      Tr_tp(3, 2) = du(3)*du(2)*(pdwdy(ip2) + pdwdy(ip1))  ! 0.5*(w_1-w_2)*(v_1-v_2)*(dw/dy_1 + dw/dy_2)
+      Tr_tp(3, 3) = du(3)*du(3)*(pdwdz(ip2) + pdwdz(ip1))  ! 0.5*(w_1-w_2)*(w_1-w_2)*(dw/dz_1 + dw/dz_2)
+
+      Tr = Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
+           + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
+           + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
+
+      if (abs(Tr) .ge. grid_Tr(nTr_2)) cycle
+
+      iTr = nint(Tr/dTr)
+      cTr(irx, iry, irz, iy, iTr) = cTr(irx, iry, irz, iy, iTr) + 1
+
 
     end do
     end do

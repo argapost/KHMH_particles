@@ -99,7 +99,7 @@ subroutine open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
   call io_check(nf90_def_var(ncid_save, 'cyc', nf90_float, cyc_id, varid(4)))
   call io_check(nf90_def_var(ncid_save, 'cduidui', nf90_float, cduidui_id, varid(5)))
   call io_check(nf90_def_var(ncid_save, 'cTr', nf90_float, cTr_id, varid(6)))
-  call io_check(nf90_def_var(ncid_save, 'time', nf90_float, dimid(5), varid(7)))
+  call io_check(nf90_def_var(ncid_save, 'time', nf90_float, dimid(7), varid(7)))
 
   call io_check(nf90_put_att(ncid_save, nf90_global, 'Database', 'TCF 950 Lozano'))
 
