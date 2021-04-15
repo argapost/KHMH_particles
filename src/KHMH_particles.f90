@@ -141,7 +141,7 @@ program KHMH_particles
   allocate (grid_Tr(nTr))
 
   ! Create non uniform grid
-  call non_uniform_grid(nduidui, grid_Tr, mduidui, .FALSE., 2.2)
+  call non_uniform_grid(nduidui, grid_duidui, mduidui, .FALSE., 2.2)
   call non_uniform_grid(nTr, grid_Tr, mTr, .TRUE., 2.3)
 
   ! Create uniform grid with 1/3 of the smallest delta in the non uniform grid
@@ -179,9 +179,9 @@ program KHMH_particles
     print *, Lrx, Lry, Lrz, y(ny)
     print *, rx(-nrx_2), ry(-nry_2), rz(-nrz_2)
     print *, grid_duidui(1), grid_duidui(nduidui)
-    print *, grid_duidui_uni(1), grid_duidui_uni(nduidui)
+    print *, grid_duidui_uni(1), grid_duidui_uni(nduidui_uni)
     print *, grid_Tr(1), grid_Tr(nTr)
-    print *, grid_Tr_uni(1), grid_Tr_uni(nTr)
+    print *, grid_Tr_uni(1), grid_Tr_uni(nTr_uni)
   end if
 
   allocate (crx(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, -nrx_2:nrx_2))
@@ -269,9 +269,9 @@ program KHMH_particles
       du(3) = pw(ip2) - pw(ip1)
 
       duidui = du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
-      if (duidui .lt. grid_duidui(nduidui)) then
+      if (duidui .lt. grid_duidui_uni(nduidui_uni)) then
         iduidui = nint(duidui/dduidui_uni) + 1
-        cduidui(irx, iry, irz, iy, iduidui) = cduidui(irx, iry, irz, iy, map_duidui(iduidui)) + 1
+        cduidui(irx, iry, irz, iy, map_duidui(iduidui)) = cduidui(irx, iry, irz, iy, map_duidui(iduidui)) + 1
       end if
 
       ! Non-linear term in scale (fluctuation part) :   d/drj [(dui)^2 duj]
@@ -292,10 +292,10 @@ program KHMH_particles
            + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
            + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
 
-      if (abs(Tr) .ge. grid_Tr(nTr_2)) cycle
+      if (abs(Tr) .ge. grid_Tr_uni(nTr_uni)) cycle
 
       iTr = nint(Tr/dTr_uni) + 1
-      cTr(irx, iry, irz, iy, iTr) = cTr(irx, iry, irz, iy, map_Tr(iTr)) + 1
+      cTr(irx, iry, irz, iy, map_Tr(iTr)) = cTr(irx, iry, irz, iy, map_Tr(iTr)) + 1
 
     end do
     end do
