@@ -47,12 +47,12 @@ program KHMH_particles
   real(4) :: pdudz(nprtcls), pdvdz(nprtcls), pdwdz(nprtcls)
   real(4) :: time
 
-  real(4), allocatable, dimension(:, :, :, :, :)  :: crx, cry, crz, cyc, cTr, cduidui
+  real(4), allocatable, dimension(:, :, :, :, :, :)  :: crxry, cryy, cyduidui, cryduidui, cyTr, cryTr, cduiduiTr
   real(4) :: prx, pry, prz, pyc
   real(4) :: Tr_tp(3, 3), Tr, duidui
   real(4) :: du(3), us(3)
 
-  integer :: ncid, varid(1), varid_o(7)
+  integer :: ncid, varid(1), varid_o(8)
   integer ::  ip1, ip2, i, it
   integer :: nb_procs, OMP_GET_NUM_THREADS
 
@@ -72,6 +72,8 @@ program KHMH_particles
   character(100) :: output_fn = "2m_hx_hy_300ts_evr10_pdf"
   character(100) :: case_fn = "re9502pipi."
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
+
+  LOGICAL :: flag = .false.
 
   !=================================================================
   !                        Initialisations.
@@ -146,34 +148,34 @@ program KHMH_particles
 
   ! Create uniform grid with 1/3 of the smallest delta in the non uniform grid
   ! to map it afterwards in the non uniform grid
-  dduidui_uni = grid_duidui(2) / 3
-  nduidui_uni = int(mduidui / dduidui_uni) + 1
+  dduidui_uni = grid_duidui(2)/3
+  nduidui_uni = int(mduidui/dduidui_uni) + 1
   allocate (grid_duidui_uni(nduidui_uni))
-  grid_duidui_uni =  (/(i*dduidui_uni, i=0, nduidui_uni-1)/)
+  grid_duidui_uni = (/(i*dduidui_uni, i=0, nduidui_uni - 1)/)
 
-  dTr_uni = grid_Tr(nTr_2 + 2) / 3
-  nTr_uni = int((2*mTr) / dTr_uni) + 1
+  dTr_uni = grid_Tr(nTr_2 + 2)/3
+  nTr_uni = int((2*mTr)/dTr_uni) + 1
   allocate (grid_Tr_uni(nTr_uni))
-  nTr_2_uni = int(nTr_uni / 2)
+  nTr_2_uni = int(nTr_uni/2)
   i = 1
   grid_Tr_uni(i) = -mTr
-  do while(grid_Tr_uni(i) + dTr_uni <= mTr)
+  do while (grid_Tr_uni(i) + dTr_uni <= mTr)
     i = i + 1
-    grid_Tr_uni(i) = grid_Tr_uni(i-1) + dTr_uni
-  enddo
+    grid_Tr_uni(i) = grid_Tr_uni(i - 1) + dTr_uni
+  end do
 
   ! Map uniform to non uniform grid
   allocate (map_duidui(nduidui_uni))
   map_duidui = 1
-  do i=2, nduidui_uni
+  do i = 2, nduidui_uni
     map_duidui(i) = minloc(abs(grid_duidui - grid_duidui_uni(i)), dim=1)
-  enddo
+  end do
 
   allocate (map_Tr(nTr_uni))
   map_Tr = 1
-  do i=2, nTr_uni
+  do i = 2, nTr_uni
     map_Tr(i) = minloc(abs(grid_Tr - grid_Tr_uni(i)), dim=1)
-  enddo
+  end do
 
   if (rank == 0) then
     print *, Lrx, Lry, Lrz, y(ny)
@@ -184,13 +186,13 @@ program KHMH_particles
     print *, grid_Tr_uni(1), grid_Tr_uni(nTr_uni)
   end if
 
-  allocate (crx(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, -nrx_2:nrx_2))
-  allocate (cry(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, -nry_2:nry_2))
-  allocate (crz(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, -nrz_2:nrz_2))
-  allocate (cyc(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, ny))
-
-  allocate (cduidui(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, nduidui))
-  allocate (cTr(-nrx_2:nrx_2, -nry_2:nry_2, -nrz_2:nrz_2, ny, nTr))
+  allocate (crxry(2, -nry_2:nry_2, 2, ny, -nrx_2:nrx_2, -nry_2:nry_2))
+  allocate (cryy(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, ny))
+  allocate (cyduidui(2, -nry_2:nry_2, 2, ny, ny, nduidui))
+  allocate (cyduidui(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nduidui))
+  allocate (cyTr(2, -nry_2:nry_2, 2, ny, ny, nTr))
+  allocate (cryTr(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nTr))
+  allocate (cduiduiTr(2, -nry_2:nry_2, 2, ny, nduidui, nTr))
 
   if (rank == 0) then
     CALL CPU_TIME(t1)
@@ -213,8 +215,8 @@ program KHMH_particles
   do it = rstart, rstop
 
     ! Initialise
-    crx = 0.; cry = 0.; crz = 0.; cyc = 0.
-    cduidui = 0.; cTr = 0.
+    crxry = 0.; cryy = 0.;
+    cyduidui = 0.; cryduidui = 0.; cyTr = 0.; cryTr = 0.; cduiduiTr = 0.
 
     call load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                        pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
@@ -222,21 +224,27 @@ program KHMH_particles
                        nprtcls, time, it, input_fn)
     print *, "Timestep = ", it, " time ", time
 
-!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0,prx,pry,prz,pyc,irx,iry,irz,iy,irxf,iryf,irzf,iyf,du,Tr_tp,duidui,iduidui,Tr,iTr)
-!$OMP DO
+!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0), &
+!$OMP& PRIVATE(prx,pry,prz,pyc,irx,iry,irz,iy,irxf,iryf,irzf,iyf,du,Tr_tp,duidui,iduidui,Tr,iTr)
+!$OMP DO SCHEDULE(GUIDED)
     do ip1 = 1, nprtcls
-    do ip2 = ip1 + 1, nprtcls
+    do ip2 = 1, ip1 - 1
       prx_0 = (px_0(ip2) - px_0(ip1))
-      if (abs(prx_0) .gt. Lrx) cycle
+      irx = nint(prx_0/drx)
+      if ((irx .ne. 0) .and. (irx .ne. 4)) cycle ! save only 2 init rxs
+
+      prz_0 = (pz_0(ip2) - pz_0(ip1))
+      irz = nint(prz_0/drz)
+      if ((irz .ne. 0) .and. (irz .ne. 4)) cycle ! save only 2 init rzs
+
+      irx = irx/4 + 1 ! -> 0 becomes 1 and 4 becomes 2
+      irz = irz/4 + 1 ! -> 0 becomes 1 and 4 becomes 2
 
       prx = (px(ip2) - px(ip1))
       if (abs(prx) .gt. Lrx) cycle
 
       pry_0 = (py_0(ip2) - py_0(ip1))
       if (abs(pry_0) .gt. Lry) cycle
-
-      prz_0 = (pz_0(ip2) - pz_0(ip1))
-      if (abs(prz_0) .gt. Lrz) cycle
 
       pry = (py(ip2) - py(ip1))
       if (abs(pry) .gt. Lry) cycle
@@ -249,29 +257,28 @@ program KHMH_particles
 
       pyc_0 = (py_0(ip2) + py_0(ip1))/2
 
-      irx = nint(prx_0/drx)
       iry = nint(pry_0/dry)
-      irz = nint(prz_0/drz)
       iy = nint(pyc_0/dy) + 1
 
       irxf = nint(prx/drx)
       iryf = nint(pry/dry)
-      irzf = nint(prz/drz)
+      ! irzf = nint(prz/drz)
       iyf = nint(pyc/dy) + 1
 
-      crx(irx, iry, irz, iy, irxf) = crx(irx, iry, irz, iy, irxf) + 1
-      cry(irx, iry, irz, iy, iryf) = cry(irx, iry, irz, iy, iryf) + 1
-      crz(irx, iry, irz, iy, irzf) = crz(irx, iry, irz, iy, irzf) + 1
-      cyc(irx, iry, irz, iy, iyf) = cyc(irx, iry, irz, iy, iyf) + 1
+      crxry(irx, iry, irz, iy, irxf, iryf) = crxry(irx, iry, irz, iy, irxf, iryf) + 1
+      cryy(irx, iry, irz, iy, iryf, iyf) = cryy(irx, iry, irz, iy, iryf, iyf) + 1
 
       du(1) = pufl(ip2) - pufl(ip1)
       du(2) = pv(ip2) - pv(ip1)
       du(3) = pw(ip2) - pw(ip1)
 
       duidui = du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
+      flag = .false.
       if (duidui .lt. grid_duidui_uni(nduidui_uni)) then
         iduidui = nint(duidui/dduidui_uni) + 1
-        cduidui(irx, iry, irz, iy, map_duidui(iduidui)) = cduidui(irx, iry, irz, iy, map_duidui(iduidui)) + 1
+        cyduidui(irx, iry, irz, iy, iyf, map_duidui(iduidui)) = cyduidui(irx, iry, irz, iy, iyf, map_duidui(iduidui)) + 1
+        cryduidui(irx, iry, irz, iy, iryf, map_duidui(iduidui)) = cryduidui(irx, iry, irz, iy, iryf, map_duidui(iduidui)) + 1
+        flag = .true.
       end if
 
       ! Non-linear term in scale (fluctuation part) :   d/drj [(dui)^2 duj]
@@ -295,17 +302,23 @@ program KHMH_particles
       if (abs(Tr) .ge. grid_Tr_uni(nTr_uni)) cycle
 
       iTr = nint(Tr/dTr_uni) + 1
-      cTr(irx, iry, irz, iy, map_Tr(iTr)) = cTr(irx, iry, irz, iy, map_Tr(iTr)) + 1
+      cyTr(irx, iry, irz, iy, iyf, map_Tr(iTr)) = cyTr(irx, iry, irz, iy, iyf, map_Tr(iTr)) + 1
+      cryTr(irx, iry, irz, iy, iryf, map_Tr(iTr)) = cryTr(irx, iry, irz, iy, iryf, map_Tr(iTr)) + 1
+
+      if (flag .eqv. .true.) then
+        cduiduiTr(irx, iry, irz, iy, map_duidui(iduidui), map_Tr(iTr)) = cduiduiTr(irx, iry, irz, iy, map_duidui(iduidui), &
+                                                                                   map_Tr(iTr)) + 1
+      end if
 
     end do
     end do
 !$OMP END DO
 !$OMP END PARALLEL
-    !ENDOPENMP
 
     call save_terms(nrx, nry, nrz, ny, nduidui, nTr, &
                     nrx_2, nry_2, nrz_2, nTr_2, &
-                    crx, cry, crz, cyc, cduidui, cTr, &
+                    crxry, cryy, cyduidui, cryduidui, cyTr, &
+                    cryTr, cduiduiTr, &
                     time, it, ncid_save, varid, output_fn)
 
   end do
