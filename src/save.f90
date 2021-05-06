@@ -57,7 +57,7 @@ subroutine save_terms(nrx, nry, nrz, ny, nduidui, nTr, &
   countv_o(6) = nTr
   call io_check(nf90_put_var(ncid_save, varid(7), cduiduiTr, startv_o, countv_o))
 
-  call io_check(nf90_put_var(ncid_save, varid(8), time, (/startv_o(5)/)))
+  call io_check(nf90_put_var(ncid_save, varid(8), time, (/startv_o(7)/)))
 
 end subroutine save_terms
 
