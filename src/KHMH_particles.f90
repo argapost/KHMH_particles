@@ -68,8 +68,8 @@ program KHMH_particles
   integer :: rstart, rstop, count, remainder, nfiles
   integer :: ncid_save
 
-  character(100) :: input_fn = "2m_hx_hy_300ts_evr10"
-  character(100) :: output_fn = "2m_hx_hy_300ts_evr10_pdf"
+  character(100) :: input_fn = "2m_hx_hy_300ts_evr1"
+  character(100) :: output_fn = "2m_hx_hy_300ts_evr1_jpdf"
   character(100) :: case_fn = "re9502pipi."
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
@@ -189,7 +189,7 @@ program KHMH_particles
   allocate (crxry(2, -nry_2:nry_2, 2, ny, -nrx_2:nrx_2, -nry_2:nry_2))
   allocate (cryy(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, ny))
   allocate (cyduidui(2, -nry_2:nry_2, 2, ny, ny, nduidui))
-  allocate (cyduidui(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nduidui))
+  allocate (cryduidui(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nduidui))
   allocate (cyTr(2, -nry_2:nry_2, 2, ny, ny, nTr))
   allocate (cryTr(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nTr))
   allocate (cduiduiTr(2, -nry_2:nry_2, 2, ny, nduidui, nTr))
