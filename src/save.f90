@@ -27,6 +27,7 @@ subroutine save_terms(nrx, nry, nrz, ny, nduidui, nTr, &
   startv_o(3) = 1
   startv_o(4) = 1
   startv_o(5) = 1
+  startv_o(6) = 1
   startv_o(7) = it
 
   countv_o(1) = 2
