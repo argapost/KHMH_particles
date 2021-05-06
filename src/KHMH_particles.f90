@@ -231,14 +231,14 @@ program KHMH_particles
     do ip2 = 1, ip1 - 1
       prx_0 = (px_0(ip2) - px_0(ip1))
       irx = nint(prx_0/drx)
-      if ((irx .ne. 0) .and. (irx .ne. 4)) cycle ! save only 2 init rxs
+      if ((irx .ne. 0) .and. (irx .ne. 8)) cycle ! save only 2 init rxs
 
       prz_0 = (pz_0(ip2) - pz_0(ip1))
       irz = nint(prz_0/drz)
-      if ((irz .ne. 0) .and. (irz .ne. 4)) cycle ! save only 2 init rzs
+      if ((irz .ne. 0) .and. (irz .ne. 8)) cycle ! save only 2 init rzs
 
-      irx = irx/4 + 1 ! -> 0 becomes 1 and 4 becomes 2
-      irz = irz/4 + 1 ! -> 0 becomes 1 and 4 becomes 2
+      irx = irx/8 + 1 ! -> 0 becomes 1 and 8 becomes 2
+      irz = irz/8 + 1 ! -> 0 becomes 1 and 8 becomes 2
 
       prx = (px(ip2) - px(ip1))
       if (abs(prx) .gt. Lrx) cycle

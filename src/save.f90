@@ -89,8 +89,8 @@ subroutine open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
   call io_check(nf90_def_dim(ncid_save, 'dim_duidui', nduidui, dimid(5)))
   call io_check(nf90_def_dim(ncid_save, 'dim_Tr', nTr, dimid(6)))
   call io_check(nf90_def_dim(ncid_save, 't', nt, dimid(7)))
-  call io_check(nf90_def_dim(ncid_save, 'srx', nt, dimid(8)))
-  call io_check(nf90_def_dim(ncid_save, 'srz', nt, dimid(9)))
+  call io_check(nf90_def_dim(ncid_save, 'srx', 2, dimid(8)))
+  call io_check(nf90_def_dim(ncid_save, 'srz', 2, dimid(9)))
 
   call io_check(nf90_def_var(ncid_save, 'grid_rx', nf90_float, dimid(1), idgrid_r1))
   call io_check(nf90_def_var(ncid_save, 'grid_ry', nf90_float, dimid(2), idgrid_r2))
