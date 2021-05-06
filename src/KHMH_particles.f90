@@ -301,7 +301,7 @@ program KHMH_particles
 
       if (abs(Tr) .ge. grid_Tr_uni(nTr_uni)) cycle
 
-      iTr = nint(Tr/dTr_uni) + 1
+      iTr = nint(Tr/dTr_uni) + nTr_2_uni + 1
       cyTr(irx, iry, irz, iy, iyf, map_Tr(iTr)) = cyTr(irx, iry, irz, iy, iyf, map_Tr(iTr)) + 1
       cryTr(irx, iry, irz, iy, iryf, map_Tr(iTr)) = cryTr(irx, iry, irz, iy, iryf, map_Tr(iTr)) + 1
 
