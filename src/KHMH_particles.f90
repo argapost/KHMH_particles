@@ -224,7 +224,7 @@ program KHMH_particles
                        nprtcls, time, it, input_fn)
     print *, "Timestep = ", it, " time ", time
 
-!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0), &
+!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0,flag), &
 !$OMP& PRIVATE(prx,pry,prz,pyc,irx,iry,irz,iy,irxf,iryf,irzf,iyf,du,Tr_tp,duidui,iduidui,Tr,iTr)
 !$OMP DO SCHEDULE(GUIDED)
     do ip1 = 1, nprtcls
