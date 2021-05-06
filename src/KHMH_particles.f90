@@ -207,7 +207,7 @@ program KHMH_particles
   call open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
                  nrx_2, nry_2, nrz_2, nTr_2, &
                  rx, ry, rz, y, grid_Tr, grid_duidui, &
-                 ncid_save, varid, output_fn)
+                 ncid_save, varid_o, output_fn)
 
   call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
@@ -319,7 +319,7 @@ program KHMH_particles
                     nrx_2, nry_2, nrz_2, nTr_2, &
                     crxry, cryy, cyduidui, cryduidui, cyTr, &
                     cryTr, cduiduiTr, &
-                    time, it, ncid_save, varid, output_fn)
+                    time, it, ncid_save, varid_o, output_fn)
 
   end do
 
