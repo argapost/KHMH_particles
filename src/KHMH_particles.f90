@@ -47,8 +47,8 @@ program KHMH_particles
   integer :: rstart, rstop, count, remainder, nfiles
   integer :: ncid_save
 
-  character(100) :: input_fn = "10k_0.25x_0.6y_200ts_evr20"
-  character(100) :: output_fn = "10k_0.25x_0.6y_200ts_evr20_range"
+  character(100) :: input_fn = "10k_0.25x_0.6y_20ts_evr10"
+  character(100) :: output_fn = "10k_0.25x_0.6y_20ts_evr10_range"
   character(100) :: case_fn = "re9502pipi."
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
