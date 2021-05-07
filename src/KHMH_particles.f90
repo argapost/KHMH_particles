@@ -138,15 +138,22 @@ program KHMH_particles
                        pdwdxdx, pdwdydy, pdwdzdz, peps, pdpdx, pdpdy, pdpdz, &
                        pdumdy, pduvdy, pdvvdy, pufl, pdudt, pdvdt, pdwdt, &
                        nprtcls, it, time, input_fn)
+    pum = pu - pufl
 
     print *, "Timestep = ", it, " time ", time
 
     do ip1 = 1, nprtcls
     do ip2 = 1, ip1 - 1
 
+      dum = pum(ip2) - pum(ip1)
+      usm = pum(ip2) + pum(ip1)
+
       du(1) = pufl(ip2) - pufl(ip1)
       du(2) = pv(ip2) - pv(ip1)
       du(3) = pw(ip2) - pw(ip1)
+
+      us(1) = pufl(ip2) + pufl(ip1)
+      us(2) = pv(ip2) + pv(ip1)
 
       duidui(ip1, ip2) = du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
 
