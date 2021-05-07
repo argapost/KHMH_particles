@@ -33,7 +33,7 @@ subroutine save_terms(nt, nprtcls, &
   startv_o(3) = it
 
   countv_o(1) = nprtcls
-  countv_o(1) = nprtcls
+  countv_o(2) = nprtcls
   countv_o(3) = 1
 
   call io_check(nf90_put_var(ncid_save, varid(1), duidui, startv_o, countv_o))
