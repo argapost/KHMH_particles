@@ -7,52 +7,31 @@ program KHMH_particles
 
   ! real(4), external :: interpolate
 
-  integer, parameter :: nrx = 61, nrx_2 = int(nrx/2)
-  integer, parameter :: nry = 61, nry_2 = int(nry/2)
-  integer, parameter :: nrz = 51, nrz_2 = int(nrz/2)
-  integer, parameter :: ny = 61
-  integer, parameter :: nduidui = 71
-  integer, parameter :: nTr = 71, nTr_2 = int(nTr/2)
-  integer :: nduidui_uni, nTr_uni, nTr_2_uni
+  integer, parameter :: nt = 20
 
-  real(4), parameter :: drx = 0.02
-  real(4), parameter :: dry = 0.02
-  real(4), parameter :: drz = 0.02
-  real(4), parameter :: dy = 0.0166
-  real(4), parameter :: dduidui = 0.0007
-  real(4), parameter :: dTr = 0.0003
-  real(4), parameter :: mTr = 0.003
-  real(4), parameter :: mduidui = 0.015
-  real(4) :: dduidui_uni, dTr_uni
-
-  integer, parameter :: nt = 300
-
-  integer, parameter :: nprtcls = 2000000
+  integer, parameter :: nprtcls = 10000
 
   real(4), parameter :: re = 20580.0
   real(4), parameter :: nu = 1./re
 
-  real(4) :: Lrx, Lry, Lrz, y(ny)
-  real(4), allocatable, dimension(:) :: rx, ry, rz, grid_Tr, grid_duidui
-  real(4), allocatable, dimension(:) :: grid_duidui_uni, grid_Tr_uni
-  integer, allocatable, dimension(:) :: map_duidui, map_Tr
-  real(4) :: prx_0, pry_0, prz_0, pyc_0
-  integer :: irx, iry, irz, iy, irxf, iryf, irzf, iyf, iduidui, iTr
-
   real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls)
-  real(4) :: px_0(nprtcls), py_0(nprtcls), pz_0(nprtcls)
-  real(4) :: pufl(nprtcls), pu(nprtcls), pv(nprtcls), pw(nprtcls)
-  real(4) :: pdudx(nprtcls), pdvdx(nprtcls), pdwdx(nprtcls)
-  real(4) :: pdudy(nprtcls), pdvdy(nprtcls), pdwdy(nprtcls)
-  real(4) :: pdudz(nprtcls), pdvdz(nprtcls), pdwdz(nprtcls)
+  real(4) :: pufl(nprtcls), pu(nprtcls), pum(nprtcls), pv(nprtcls), pw(nprtcls), peps(nprtcls)
+  real(4) :: pdudx(nprtcls), pdvdx(nprtcls), pdwdx(nprtcls), pdpdx(nprtcls)
+  real(4) :: pdudy(nprtcls), pdvdy(nprtcls), pdwdy(nprtcls), pdpdy(nprtcls)
+  real(4) :: pdudz(nprtcls), pdvdz(nprtcls), pdwdz(nprtcls), pdpdz(nprtcls)
+  real(4) :: pdudxdx(nprtcls), pdvdxdx(nprtcls), pdwdxdx(nprtcls)
+  real(4) :: pdudydy(nprtcls), pdvdydy(nprtcls), pdwdydy(nprtcls)
+  real(4) :: pdudzdz(nprtcls), pdvdzdz(nprtcls), pdwdzdz(nprtcls)
+  real(4) :: pdumdy(nprtcls), pduvdy(nprtcls), pdvvdy(nprtcls)
+  real(4) :: pdudt(nprtcls), pdvdt(nprtcls), pdwdt(nprtcls)
   real(4) :: time
 
-  real(4), allocatable, dimension(:, :, :, :, :, :)  :: crxry, cryy, cyduidui, cryduidui, cyTr, cryTr, cduiduiTr
-  real(4) :: prx, pry, prz, pyc
-  real(4) :: Tr_tp(3, 3), Tr, duidui
-  real(4) :: du(3), us(3)
+  real(4), allocatable, dimension(:, :)  :: Dt, Tr, Ty, Trm, Tym, Tx, Tz, Rs, Tp, Dr, Dc, Dis, duidui
+  real(4), allocatable, dimension(:, :)  :: Tr_I, Tr_H
+  real(4) :: Tr_tp(3, 3), Ty_tp(3, 3), D_tp(3, 3, 3), Trm_tp(3, 3), Tym_tp(3, 3), Tx_tp(3, 3), Tz_tp(3, 3), Rs_tp(3, 3)
+  real(4) :: du(3), us(3), dum, usm
 
-  integer :: ncid, varid(1), varid_o(8)
+  integer :: ncid, varid(1), varid_o(17)
   integer ::  ip1, ip2, i, it
   integer :: nb_procs, OMP_GET_NUM_THREADS
 
@@ -68,12 +47,10 @@ program KHMH_particles
   integer :: rstart, rstop, count, remainder, nfiles
   integer :: ncid_save
 
-  character(100) :: input_fn = "2m_hx_hy_300ts_evr1"
-  character(100) :: output_fn = "2m_hx_hy_300ts_evr1_jpdf"
+  character(100) :: input_fn = "10k_0.25x_0.6y_200ts_evr20"
+  character(100) :: output_fn = "10k_0.25x_0.6y_200ts_evr20_range"
   character(100) :: case_fn = "re9502pipi."
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
-
-  LOGICAL :: flag = .false.
 
   !=================================================================
   !                        Initialisations.
@@ -120,79 +97,23 @@ program KHMH_particles
   !-------------------------------------------------------
   !       initialization of fields
   !-------------------------------------------------------
-  allocate (rx(-nrx_2:nrx_2))
-  allocate (ry(-nry_2:nry_2))
-  allocate (rz(-nrz_2:nrz_2))
 
-  rx = (/(i*drx, i=-nrx_2, nrx_2)/)
-  ry = (/(i*dry, i=-nry_2, nry_2)/)
-  rz = (/(i*drz, i=-nrz_2, nrz_2)/)
-  y = (/(i*dy, i=0, ny - 1)/)
+  allocate (duidui(nprtcls, nprtcls))
 
-  Lrx = rx(nrx_2)
-  Lry = ry(nry_2)
-  Lrz = rz(nrz_2)
-
-  ! allocate (grid_duidui(nduidui))
-  ! allocate (grid_Tr(-nTr_2:nTr_2))
-  ! grid_duidui = (/(i*dduidui, i=0, nduidui - 1)/)
-  ! grid_Tr = (/(i*dTr, i=-nTr_2, nTr_2)/)
-  grid_duidui = 0.
-  grid_Tr = 0.
-  allocate (grid_duidui(nduidui))
-  allocate (grid_Tr(nTr))
-
-  ! Create non uniform grid
-  call non_uniform_grid(nduidui, grid_duidui, mduidui, .FALSE., 2.2)
-  call non_uniform_grid(nTr, grid_Tr, mTr, .TRUE., 2.3)
-
-  ! Create uniform grid with 1/3 of the smallest delta in the non uniform grid
-  ! to map it afterwards in the non uniform grid
-  dduidui_uni = grid_duidui(2)/3
-  nduidui_uni = int(mduidui/dduidui_uni) + 1
-  allocate (grid_duidui_uni(nduidui_uni))
-  grid_duidui_uni = (/(i*dduidui_uni, i=0, nduidui_uni - 1)/)
-
-  dTr_uni = grid_Tr(nTr_2 + 2)/3
-  nTr_uni = int((2*mTr)/dTr_uni) + 1
-  allocate (grid_Tr_uni(nTr_uni))
-  nTr_2_uni = int(nTr_uni/2)
-  i = 1
-  grid_Tr_uni(i) = -mTr
-  do while (grid_Tr_uni(i) + dTr_uni <= mTr)
-    i = i + 1
-    grid_Tr_uni(i) = grid_Tr_uni(i - 1) + dTr_uni
-  end do
-
-  ! Map uniform to non uniform grid
-  allocate (map_duidui(nduidui_uni))
-  map_duidui = 1
-  do i = 2, nduidui_uni
-    map_duidui(i) = minloc(abs(grid_duidui - grid_duidui_uni(i)), dim=1)
-  end do
-
-  allocate (map_Tr(nTr_uni))
-  map_Tr = 1
-  do i = 2, nTr_uni
-    map_Tr(i) = minloc(abs(grid_Tr - grid_Tr_uni(i)), dim=1)
-  end do
-
-  if (rank == 0) then
-    print *, Lrx, Lry, Lrz, y(ny)
-    print *, rx(-nrx_2), ry(-nry_2), rz(-nrz_2)
-    print *, grid_duidui(1), grid_duidui(nduidui)
-    print *, grid_duidui_uni(1), grid_duidui_uni(nduidui_uni)
-    print *, grid_Tr(1), grid_Tr(nTr)
-    print *, grid_Tr_uni(1), grid_Tr_uni(nTr_uni)
-  end if
-
-  allocate (crxry(2, -nry_2:nry_2, 2, ny, -nrx_2:nrx_2, -nry_2:nry_2))
-  allocate (cryy(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, ny))
-  allocate (cyduidui(2, -nry_2:nry_2, 2, ny, ny, nduidui))
-  allocate (cryduidui(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nduidui))
-  allocate (cyTr(2, -nry_2:nry_2, 2, ny, ny, nTr))
-  allocate (cryTr(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nTr))
-  allocate (cduiduiTr(2, -nry_2:nry_2, 2, ny, nduidui, nTr))
+  allocate (Dis(nprtcls, nprtcls))
+  allocate (Dt(nprtcls, nprtcls))
+  allocate (Tr(nprtcls, nprtcls))
+  allocate (Tp(nprtcls, nprtcls))
+  allocate (Trm(nprtcls, nprtcls))
+  allocate (Ty(nprtcls, nprtcls))
+  allocate (Tym(nprtcls, nprtcls))
+  allocate (Tx(nprtcls, nprtcls))
+  allocate (Tz(nprtcls, nprtcls))
+  allocate (Rs(nprtcls, nprtcls))
+  allocate (Dr(nprtcls, nprtcls))
+  allocate (Dc(nprtcls, nprtcls))
+  allocate (Tr_I(nprtcls, nprtcls))
+  allocate (Tr_H(nprtcls, nprtcls))
 
   if (rank == 0) then
     CALL CPU_TIME(t1)
@@ -201,85 +122,38 @@ program KHMH_particles
     CALL SYSTEM_CLOCK(COUNT=nb_periodes_initial)
   end if
 
-  call load_1st_timestep(px_0, py_0, pz_0, &
-                         nprtcls, 1, input_fn)
-
-  call open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
-                 nrx_2, nry_2, nrz_2, nTr_2, &
-                 rx, ry, rz, y, grid_Tr, grid_duidui, &
-                 ncid_save, varid_o, output_fn)
+  call open_ncdf(nt, nprtcls, ncid_save, varid_o, output_fn)
 
   call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
   ! MPI parallel in time
   do it = rstart, rstop
-
-    ! Initialise
-    crxry = 0.; cryy = 0.;
-    cyduidui = 0.; cryduidui = 0.; cyTr = 0.; cryTr = 0.; cduiduiTr = 0.
+    Dis = 0.; duidui = 0.; Rs = 0.;
+    Dt = 0.; Tp = 0.; Tr = 0.; Trm = 0.; Ty = 0.; Tym = 0.; Dr = 0.; Dc = 0.
+    Tr_I = 0.; Tr_H = 0.
 
     call load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                        pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
-                       pufl, &
-                       nprtcls, time, it, input_fn)
+                       pdudxdx, pdudydy, pdudzdz, pdvdxdx, pdvdydy, pdvdzdz, &
+                       pdwdxdx, pdwdydy, pdwdzdz, peps, pdpdx, pdpdy, pdpdz, &
+                       pdumdy, pduvdy, pdvvdy, pufl, pdudt, pdvdt, pdwdt, &
+                       nprtcls, it, time, input_fn)
+
     print *, "Timestep = ", it, " time ", time
 
-!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0,flag), &
-!$OMP& PRIVATE(prx,pry,prz,pyc,irx,iry,irz,iy,irxf,iryf,irzf,iyf,du,Tr_tp,duidui,iduidui,Tr,iTr)
-!$OMP DO SCHEDULE(GUIDED)
     do ip1 = 1, nprtcls
     do ip2 = 1, ip1 - 1
-      prx_0 = (px_0(ip2) - px_0(ip1))
-      irx = nint(prx_0/drx)
-      if ((irx .ne. 0) .and. (irx .ne. 8)) cycle ! save only 2 init rxs
-
-      prz_0 = (pz_0(ip2) - pz_0(ip1))
-      irz = nint(prz_0/drz)
-      if ((irz .ne. 0) .and. (irz .ne. 8)) cycle ! save only 2 init rzs
-
-      irx = irx/8 + 1 ! -> 0 becomes 1 and 8 becomes 2
-      irz = irz/8 + 1 ! -> 0 becomes 1 and 8 becomes 2
-
-      prx = (px(ip2) - px(ip1))
-      if (abs(prx) .gt. Lrx) cycle
-
-      pry_0 = (py_0(ip2) - py_0(ip1))
-      if (abs(pry_0) .gt. Lry) cycle
-
-      pry = (py(ip2) - py(ip1))
-      if (abs(pry) .gt. Lry) cycle
-
-      prz = (pz(ip2) - pz(ip1))
-      if (abs(prz) .gt. Lrz) cycle
-
-      pyc = (py(ip2) + py(ip1))/2
-      if (pyc .gt. 1.0) cycle
-
-      pyc_0 = (py_0(ip2) + py_0(ip1))/2
-
-      iry = nint(pry_0/dry)
-      iy = nint(pyc_0/dy) + 1
-
-      irxf = nint(prx/drx)
-      iryf = nint(pry/dry)
-      ! irzf = nint(prz/drz)
-      iyf = nint(pyc/dy) + 1
-
-      crxry(irx, iry, irz, iy, irxf, iryf) = crxry(irx, iry, irz, iy, irxf, iryf) + 1
-      cryy(irx, iry, irz, iy, iryf, iyf) = cryy(irx, iry, irz, iy, iryf, iyf) + 1
 
       du(1) = pufl(ip2) - pufl(ip1)
       du(2) = pv(ip2) - pv(ip1)
       du(3) = pw(ip2) - pw(ip1)
 
-      duidui = du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
-      flag = .false.
-      if (duidui .lt. grid_duidui_uni(nduidui_uni)) then
-        iduidui = nint(duidui/dduidui_uni) + 1
-        cyduidui(irx, iry, irz, iy, iyf, map_duidui(iduidui)) = cyduidui(irx, iry, irz, iy, iyf, map_duidui(iduidui)) + 1
-        cryduidui(irx, iry, irz, iy, iryf, map_duidui(iduidui)) = cryduidui(irx, iry, irz, iy, iryf, map_duidui(iduidui)) + 1
-        flag = .true.
-      end if
+      duidui(ip1, ip2) = du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
+
+      ! Time derivative terms  :  d/dt [(dui)^2]
+      Dt(ip1, ip2) = Dt(ip1, ip2) + 2.0*(du(1)*(pdudt(ip2) - pdudt(ip1)) &  ! (u_1-u_2)*(du/dt_1 - du/dt_2)
+                                         + du(2)*(pdvdt(ip2) - pdvdt(ip1)) &  ! (v_1-v_2)*(dv/dt_1 - dv/dt_2)
+                                         + du(3)*(pdwdt(ip2) - pdwdt(ip1)))   ! (w_1-w_2)*(dw/dt_1 - dw/dt_2)
 
       ! Non-linear term in scale (fluctuation part) :   d/drj [(dui)^2 duj]
 
@@ -295,30 +169,172 @@ program KHMH_particles
       Tr_tp(3, 2) = du(3)*du(2)*(pdwdy(ip2) + pdwdy(ip1))  ! 0.5*(w_1-w_2)*(v_1-v_2)*(dw/dy_1 + dw/dy_2)
       Tr_tp(3, 3) = du(3)*du(3)*(pdwdz(ip2) + pdwdz(ip1))  ! 0.5*(w_1-w_2)*(w_1-w_2)*(dw/dz_1 + dw/dz_2)
 
-      Tr = Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
-           + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
-           + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
+      Tr(ip1, ip2) = Tr(ip1, ip2) + Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
+                     + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
+                     + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
 
-      if (abs(Tr) .ge. grid_Tr_uni(nTr_uni)) cycle
+      ! Non-linear term (inhomogeneous fluctuation part) :   d/drj [duj*(ui1^2 + ui2^2)]   (with dui = ui1 - ui2)
+      Tr_tp(1, 1) = du(1)*(pufl(ip2)*pdudx(ip2) - pufl(ip1)*pdudx(ip1)) ! (u_1-u_2)*(u_1*du/dx_1 - u_2*du/dx_2)
+      Tr_tp(1, 2) = du(2)*(pufl(ip2)*pdudy(ip2) - pufl(ip1)*pdudy(ip1)) ! (v_1-v_2)*(u_1*du/dy_1 - u_2*du/dy_2)
+      Tr_tp(1, 3) = du(3)*(pufl(ip2)*pdudz(ip2) - pufl(ip1)*pdudz(ip1)) ! (w_1-w_2)*(u_1*du/dz_1 - u_2*du/dz_2)
 
-      iTr = nint(Tr/dTr_uni) + nTr_2_uni + 1
-      cyTr(irx, iry, irz, iy, iyf, map_Tr(iTr)) = cyTr(irx, iry, irz, iy, iyf, map_Tr(iTr)) + 1
-      cryTr(irx, iry, irz, iy, iryf, map_Tr(iTr)) = cryTr(irx, iry, irz, iy, iryf, map_Tr(iTr)) + 1
+      Tr_tp(2, 1) = du(1)*(pv(ip2)*pdvdx(ip2) - pv(ip1)*pdvdx(ip1)) ! (u_1-u_2)*(v_1*dv/dx_1 - v_2*dv/dx_2)
+      Tr_tp(2, 2) = du(2)*(pv(ip2)*pdvdy(ip2) - pv(ip1)*pdvdy(ip1))
+      Tr_tp(2, 3) = du(3)*(pv(ip2)*pdvdz(ip2) - pv(ip1)*pdvdz(ip1))
 
-      if (flag .eqv. .true.) then
-        cduiduiTr(irx, iry, irz, iy, map_duidui(iduidui), map_Tr(iTr)) = cduiduiTr(irx, iry, irz, iy, map_duidui(iduidui), &
-                                                                                   map_Tr(iTr)) + 1
-      end if
+      Tr_tp(3, 1) = du(1)*(pw(ip2)*pdwdx(ip2) - pw(ip1)*pdwdx(ip1))
+      Tr_tp(3, 2) = du(2)*(pw(ip2)*pdwdy(ip2) - pw(ip1)*pdwdy(ip1))
+      Tr_tp(3, 3) = du(3)*(pw(ip2)*pdwdz(ip2) - pw(ip1)*pdwdz(ip1))
+
+      Tr_I(ip1, ip2) = Tr_I(ip1, ip2) + Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
+                       + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
+                       + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
+
+      ! Non-linear term in scale (homogeneous fluctuation part) :  -2 d/drj [duj*(ui1*ui2]   (with dui = ui1 - ui2)
+      Tr_tp(1, 1) = -du(1)*(pufl(ip1)*pdudx(ip2) - pufl(ip2)*pdudx(ip1)) ! (u_1-u_2)*(u_1*du/dx_2 - u_2*du/dx_1)
+      Tr_tp(1, 2) = -du(2)*(pufl(ip1)*pdudy(ip2) - pufl(ip2)*pdudy(ip1)) ! (v_1-v_2)*(u_1*du/dy_2 - u_2*du/dy_1)
+      Tr_tp(1, 3) = -du(3)*(pufl(ip1)*pdudz(ip2) - pufl(ip2)*pdudz(ip1))
+
+      Tr_tp(2, 1) = -du(1)*(pv(ip1)*pdvdx(ip2) - pv(ip2)*pdvdx(ip1)) ! (u_1-u_2)*(v_1*dv/dx_2 - v_2*dv/dx_1
+      Tr_tp(2, 2) = -du(2)*(pv(ip1)*pdvdy(ip2) - pv(ip2)*pdvdy(ip1))
+      Tr_tp(2, 3) = -du(3)*(pv(ip1)*pdvdz(ip2) - pv(ip2)*pdvdz(ip1))
+
+      Tr_tp(3, 1) = -du(1)*(pw(ip1)*pdwdx(ip2) - pw(ip2)*pdwdx(ip1))
+      Tr_tp(3, 2) = -du(2)*(pw(ip1)*pdwdy(ip2) - pw(ip2)*pdwdy(ip1))
+      Tr_tp(3, 3) = -du(3)*(pw(ip1)*pdwdz(ip2) - pw(ip2)*pdwdz(ip1))
+
+      Tr_H(ip1, ip2) = Tr_H(ip1, ip2) + Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
+                       + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
+                       + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
+
+      ! Non-linear term in scale (mean part) : d/drj [(dui)^2 dumj]
+
+      Trm_tp(1, 1) = du(1)*dum*(pdudx(ip2) + pdudx(ip1))  ! (u_1-u_2)*(um_1-um_2)*(du/dx_1 + du/dx_2)
+
+      Trm_tp(2, 1) = du(2)*dum*(pdvdx(ip2) + pdvdx(ip1))  ! (v_1-v_2)*(um_1-um_2)*(dv/dx_1 + dv/dx_2)
+
+      Trm_tp(3, 1) = du(3)*dum*(pdwdx(ip2) + pdwdx(ip1))  ! (w_1-w_2)*(um_1-um_2)*(dw/dx_1 + dw/dx_2)
+
+      Trm(ip1, ip2) = Trm(ip1, ip2) + Trm_tp(1, 1) + Trm_tp(2, 1) + Trm_tp(3, 1)
+
+      ! Non-linear term in physical space
+
+      Ty_tp(1, 1) = du(1)*us(1)*(pdudx(ip2) - pdudx(ip1))  ! 0.5*(u_1-u_2)*(u_1 + u_2)*(du/dx_1 - du/dz_2)
+      Ty_tp(1, 2) = du(1)*us(2)*(pdudy(ip2) - pdudy(ip1))  ! 0.5*(u_1-u_2)*(v_1 + v_2)*(du/dy_1 - du/dy_2)
+      Ty_tp(1, 3) = du(1)*us(3)*(pdudz(ip2) - pdudz(ip1))  ! 0.5*(u_1-u_2)*(w_1 + w_2)*(du/dz_1 - du/dz_2)
+
+      Ty_tp(2, 1) = du(2)*us(1)*(pdvdx(ip2) - pdvdx(ip1))  ! 0.5*(v_1-v_2)*(u_1 + u_2)*(dv/dx_1 - dv/dz_2)
+      Ty_tp(2, 2) = du(2)*us(2)*(pdvdy(ip2) - pdvdy(ip1))  ! 0.5*(v_1-v_2)*(v_1 + v_2)*(dv/dy_1 - dv/dy_2)
+      Ty_tp(2, 3) = du(2)*us(3)*(pdvdz(ip2) - pdvdz(ip1))  ! 0.5*(v_1-v_2)*(w_1 + w_2)*(dv/dz_1 - dv/dz_2)
+
+      Ty_tp(3, 1) = du(3)*us(1)*(pdwdx(ip2) - pdwdx(ip1))  ! 0.5*(w_1-w_2)*(u_1 + u_2)*(dw/dx_1 - dw/dz_2)
+      Ty_tp(3, 2) = du(3)*us(2)*(pdwdy(ip2) - pdwdy(ip1))  ! 0.5*(w_1-w_2)*(v_1 + v_2)*(dw/dy_1 - dw/dy_2)
+      Ty_tp(3, 3) = du(3)*us(3)*(pdwdz(ip2) - pdwdz(ip1))  ! 0.5*(w_1-w_2)*(w_1 + w_2)*(dw/dz_1 - dw/dz_2)
+
+      Ty(ip1, ip2) = Ty(ip1, ip2) + Ty_tp(1, 1) + Ty_tp(1, 2) + Ty_tp(1, 3) &
+                     + Ty_tp(2, 1) + Ty_tp(2, 2) + Ty_tp(2, 3) &
+                     + Ty_tp(3, 1) + Ty_tp(3, 2) + Ty_tp(3, 3)
+
+      ! Non-linear term in physical space (mean part) : d/dXj [(dui)^2 umj*]
+
+      Tym_tp(1, 1) = du(1)*usm*(pdudx(ip2) - pdudx(ip1))  ! (u_1-u_2)*(um_1 + um_2)*(du/dx_1 - du/dz_2)
+
+      Tym_tp(2, 1) = du(2)*usm*(pdvdx(ip2) - pdvdx(ip1))  ! (v_1-v_2)*(um_1 + um_2)*(dv/dx_1 - dv/dz_2)
+
+      Tym_tp(3, 1) = du(3)*usm*(pdwdx(ip2) - pdwdx(ip1))  ! (w_1-w_2)*(um_1 + um_2)*(dw/dx_1 - dw/dz_2)
+
+      Tym(ip1, ip2) = Tym(ip1, ip2) + Tym_tp(1, 1) + Tym_tp(2, 1) + Tym_tp(3, 1)
+
+      ! Non-linear term 2 in physical space : 2 dui uj* d/dXj [dumi]
+
+      Tx_tp(1, 2) = du(1)*us(2)*(pdumdy(ip2) - pdumdy(ip1))  ! (u_1-u_2)*(v_1 + v_2)*(dum/dy_1 - dum/dy_2)
+      Tx(ip1, ip2) = Tx(ip1, ip2) + Tx_tp(1, 2)
+
+      ! Non-linear term 2 in scale : 2 dui duj d/drj [dumi]
+
+      Tz_tp(1, 2) = du(1)*du(2)*(pdumdy(ip2) + pdumdy(ip1))  ! (u_1-u_2)*(v_1-v_2)*(dum/dy_1 + dum/dy_2)
+      Tz(ip1, ip2) = Tz(ip1, ip2) + Tz_tp(1, 2)
+
+      ! Reynolds Stress term : dui d/dXj [ duiuj ]
+
+      Rs_tp(1, 2) = du(1)*(pduvdy(ip2) - pduvdy(ip1))  ! (u_1-u_2)*(duv/dy_1 - duv/dy_2)
+
+      Rs_tp(2, 2) = du(2)*(pdvvdy(ip2) - pdvvdy(ip1))  ! (v_1-v_2)*(dvv/dy_1 - dvv/dy_2)
+
+      Rs(ip1, ip2) = Rs(ip1, ip2) + Rs_tp(1, 2) + Rs_tp(2, 2)
+
+      ! Pressure term : 2* dui d/dXi [ dp ]
+
+      Tp(ip1, ip2) = Tp(ip1, ip2) + 2.0*(du(1)*(pdpdx(ip2) - pdpdx(ip1)) &  ! (u_1-u_2)*(dp/dx_1 - dp/dx_2)
+                                         + du(2)*(pdpdy(ip2) - pdpdy(ip1)) &  ! (v_1-v_2)*(dp/dy_1 - dp/dy_2)
+                                         + du(3)*(pdpdz(ip2) - pdpdz(ip1)))   ! (w_1-w_2)*(dp/dz_1 - dp/dz_2)
+
+      ! Dissipation term
+
+      Dis(ip1, ip2) = Dis(ip1, ip2) + 2.0*(peps(ip2) + peps(ip1))
+
+      ! Diffusion term in scale and space
+
+      D_tp(1, 1, 1) = du(1)*((pdudxdx(ip2)) - (pdudxdx(ip1)))  ! (u_1-u_2)*(ddu/ddx_1 - ddu/ddx_2)
+      D_tp(1, 1, 2) = du(2)*((pdvdxdx(ip2)) - (pdvdxdx(ip1)))  ! (v_1-v_2)*(ddv/ddx_1 - ddv/ddx_2)
+      D_tp(1, 1, 3) = du(3)*((pdwdxdx(ip2)) - (pdwdxdx(ip1)))  ! (w_1-w_2)*(ddw/ddx_1 - ddw/ddx_2)
+      D_tp(1, 2, 1) = du(1)*((pdudydy(ip2)) - (pdudydy(ip1)))  ! (u_1-u_2)*(ddu/ddy_1 - ddu/ddy_2)
+      D_tp(1, 2, 2) = du(2)*((pdvdydy(ip2)) - (pdvdydy(ip1)))  ! (v_1-v_2)*(ddv/ddy_1 - ddv/ddy_2)
+      D_tp(1, 2, 3) = du(3)*((pdwdydy(ip2)) - (pdwdydy(ip1)))  ! (w_1-w_2)*(ddw/ddy_1 - ddw/ddy_2)
+      D_tp(1, 3, 1) = du(1)*((pdudzdz(ip2)) - (pdudzdz(ip1)))  ! (u_1-u_2)*(ddu/ddz_1 - ddu/ddz_2)
+      D_tp(1, 3, 2) = du(2)*((pdvdzdz(ip2)) - (pdvdzdz(ip1)))  ! (v_1-v_2)*(ddv/ddz_1 - ddv/ddz_2)
+      D_tp(1, 3, 3) = du(3)*((pdwdzdz(ip2)) - (pdwdzdz(ip1)))  ! (w_1-w_2)*(ddw/ddz_1 - ddw/ddz_2)
+
+      D_tp(2, 1, 1) = (((pdudx(ip2))**2) + (pdudx(ip1))**2)  ! (du/dx_1)**2 + (du/dx_2)**2
+      D_tp(2, 1, 2) = (((pdvdx(ip2))**2) + (pdvdx(ip1))**2)  ! (dv/dx_1)**2 + (dv/dx_2)**2
+      D_tp(2, 1, 3) = (((pdwdx(ip2))**2) + (pdwdx(ip1))**2)  ! (dw/dx_1)**2 + (dw/dx_2)**2
+      D_tp(2, 2, 1) = (((pdudy(ip2))**2) + (pdudy(ip1))**2)  ! (du/dy_1)**2 + (du/dy_2)**2
+      D_tp(2, 2, 2) = (((pdvdy(ip2))**2) + (pdvdy(ip1))**2)  ! (dv/dy_1)**2 + (dv/dy_2)**2
+      D_tp(2, 2, 3) = (((pdwdy(ip2))**2) + (pdwdy(ip1))**2)  ! (dw/dy_1)**2 + (dw/dy_2)**2
+      D_tp(2, 3, 1) = (((pdudz(ip2))**2) + (pdudz(ip1))**2)  ! (du/dz_1)**2 + (du/dz_2)**2
+      D_tp(2, 3, 2) = (((pdvdz(ip2))**2) + (pdvdz(ip1))**2)  ! (dv/dz_1)**2 + (dv/dz_2)**2
+      D_tp(2, 3, 3) = (((pdwdz(ip2))**2) + (pdwdz(ip1))**2)  ! (dw/dz_1)**2 + (dw/dz_2)**2
+
+      D_tp(3, 1, 1) = 2.0*pdudx(ip2)*pdudx(ip1)            ! 2*(du/dx_1)*(du/dx_2)
+      D_tp(3, 1, 2) = 2.0*pdvdx(ip2)*pdvdx(ip1)            ! 2*(dv/dx_1)*(dv/dx_2)
+      D_tp(3, 1, 3) = 2.0*pdwdx(ip2)*pdwdx(ip1)            ! 2*(dw/dx_1)*(dw/dx_2)
+      D_tp(3, 2, 1) = 2.0*pdudy(ip2)*pdudy(ip1)            ! 2*(du/dy_1)*(du/dy_2)
+      D_tp(3, 2, 2) = 2.0*pdvdy(ip2)*pdvdy(ip1)            ! 2*(dv/dy_1)*(dv/dy_2)
+      D_tp(3, 2, 3) = 2.0*pdwdy(ip2)*pdwdy(ip1)            ! 2*(dw/dy_1)*(dw/dy_2)
+      D_tp(3, 3, 1) = 2.0*pdudz(ip2)*pdudz(ip1)            ! 2*(du/dz_1)*(du/dz_2)
+      D_tp(3, 3, 2) = 2.0*pdvdz(ip2)*pdvdz(ip1)            ! 2*(dv/dz_1)*(dv/dz_2)
+      D_tp(3, 3, 3) = 2.0*pdwdz(ip2)*pdwdz(ip1)            ! 2*(dw/dz_1)*(dw/dz_2)
+
+      ! Diffusion term in scale :  2*nu * d2/drj[ (dui)^2 ]
+
+      Dr(ip1, ip2) = Dr(ip1, ip2) + nu*((D_tp(1, 1, 1) + D_tp(2, 1, 1) + D_tp(3, 1, 1) + &
+                                         D_tp(1, 1, 2) + D_tp(2, 1, 2) + D_tp(3, 1, 2) + &
+                                         D_tp(1, 1, 3) + D_tp(2, 1, 3) + D_tp(3, 1, 3)) &
+                                        + (D_tp(1, 2, 1) + D_tp(2, 2, 1) + D_tp(3, 2, 1) + &
+                                           D_tp(1, 2, 2) + D_tp(2, 2, 2) + D_tp(3, 2, 2) + &
+                                           D_tp(1, 2, 3) + D_tp(2, 2, 3) + D_tp(3, 2, 3)) &
+                                        + (D_tp(1, 3, 1) + D_tp(2, 3, 1) + D_tp(3, 3, 1) + &
+                                           D_tp(1, 3, 2) + D_tp(2, 3, 2) + D_tp(3, 3, 2) + &
+                                           D_tp(1, 3, 3) + D_tp(2, 3, 3) + D_tp(3, 3, 3)))
+
+      ! Diffusion term in space :  nu/2 * d2/dXj[ (dui)^2 ]
+
+      Dc(ip1, ip2) = Dc(ip1, ip2) + nu*((D_tp(1, 1, 1) + D_tp(2, 1, 1) - D_tp(3, 1, 1) + &
+                                         D_tp(1, 1, 2) + D_tp(2, 1, 2) - D_tp(3, 1, 2) + &
+                                         D_tp(1, 1, 3) + D_tp(2, 1, 3) - D_tp(3, 1, 3)) &
+                                        + (D_tp(1, 2, 1) + D_tp(2, 2, 1) - D_tp(3, 2, 1) + &
+                                           D_tp(1, 2, 2) + D_tp(2, 2, 2) - D_tp(3, 2, 2) + &
+                                           D_tp(1, 2, 3) + D_tp(2, 2, 3) - D_tp(3, 2, 3)) &
+                                        + (D_tp(1, 3, 1) + D_tp(2, 3, 1) - D_tp(3, 3, 1) + &
+                                           D_tp(1, 3, 2) + D_tp(2, 3, 2) - D_tp(3, 3, 2) + &
+                                           D_tp(1, 3, 3) + D_tp(2, 3, 3) - D_tp(3, 3, 3)))
 
     end do
     end do
-!$OMP END DO
-!$OMP END PARALLEL
 
-    call save_terms(nrx, nry, nrz, ny, nduidui, nTr, &
-                    nrx_2, nry_2, nrz_2, nTr_2, &
-                    crxry, cryy, cyduidui, cryduidui, cyTr, &
-                    cryTr, cduiduiTr, &
+    call save_terms(nt, nprtcls, &
+                    duidui, Dis, Dt, Tr, Tp, Trm, Ty, &
+                    Tym, Tx, Tz, Rs, Dr, Dc, Tr_I, Tr_H, &
                     time, it, ncid_save, varid_o, output_fn)
 
   end do
