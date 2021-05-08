@@ -76,7 +76,7 @@ program KHMH_particles
   integer :: ncid_save
 
   character(100) :: input_fn = "2m_hx_hy_300ts_evr1"
-  character(100) :: output_fn = "2m_hx_hy_300ts_evr1_jpdf"
+  character(100) :: output_fn = "2m_hx_hy_300ts_evr1_terms_jpdf"
   character(100) :: case_fn = "re9502pipi."
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
