@@ -1,25 +1,22 @@
-subroutine save_terms(nrx, nry, nrz, ny, nduidui, nTr, &
-                      nrx_2, nry_2, nrz_2, nTr_2, &
-                      crxry, cryy, cyduidui, cryduidui, cyTr, &
-                      cryTr, cduiduiTr, &
+subroutine save_terms(nrx, nry, nrz, ny, &
+                      nTr, nTr_I, nTr_H, nTy, nAtA, &
+                      nrx_2, nry_2, nrz_2, &
+                      cAtATr, cAtATr_I, cAtATr_H, cAtATy, &
                       time, it, ncid_save, varid, output_fn)
 
   use netcdf
   use MPI
 
-  integer :: nrx, nry, nrz, ny, nduidui, nTr, it
-  integer :: nrx_2, nry_2, nrz_2, nTr_2
+  integer :: nrx, nry, nrz, ny, nAtA, nTr, nTr_I, nTr_H, nTy
+  integer :: nrx_2, nry_2, nrz_2
 
-  integer :: varid(8)
+  integer :: varid(5)
   integer :: ncid_save, startv_o(7), countv_o(7)
 
-  real(4), dimension(2, -nry_2:nry_2, 2, ny, -nrx_2:nrx_2, -nry_2:nry_2)  :: crxry
-  real(4), dimension(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, ny)  :: cryy
-  real(4), dimension(2, -nry_2:nry_2, 2, ny, ny, nduidui)  :: cyduidui
-  real(4), dimension(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nduidui)  :: cryduidui
-  real(4), dimension(2, -nry_2:nry_2, 2, ny, ny, nTr)  :: cyTr
-  real(4), dimension(2, -nry_2:nry_2, 2, ny, -nry_2:nry_2, nTr)  :: cryTr
-  real(4), dimension(2, -nry_2:nry_2, 2, ny, nduidui, nTr)  :: cduiduiTr
+  real(4), dimension(2, -nry_2:nry_2, 2, ny, nAtA, nTr)  :: cAtATr
+  real(4), dimension(2, -nry_2:nry_2, 2, ny, nAtA, nTr_I)  :: cAtATr_I
+  real(4), dimension(2, -nry_2:nry_2, 2, ny, nAtA, nTr_H)  :: cAtATr_H
+  real(4), dimension(2, -nry_2:nry_2, 2, ny, nAtA, nTy)  :: cAtATy
   real(4) :: time
 
   startv_o(1) = 1
@@ -34,49 +31,40 @@ subroutine save_terms(nrx, nry, nrz, ny, nduidui, nTr, &
   countv_o(2) = nry
   countv_o(3) = 2
   countv_o(4) = ny
+  countv_o(5) = nAtA
   countv_o(7) = 1
 
-  countv_o(5) = nrx
-  countv_o(6) = nry
-  call io_check(nf90_put_var(ncid_save, varid(1), crxry, startv_o, countv_o))
-  countv_o(5) = nry
-  countv_o(6) = ny
-  call io_check(nf90_put_var(ncid_save, varid(2), cryy, startv_o, countv_o))
-  countv_o(5) = ny
-  countv_o(6) = nduidui
-  call io_check(nf90_put_var(ncid_save, varid(3), cyduidui, startv_o, countv_o))
-  countv_o(5) = nry
-  countv_o(6) = nduidui
-  call io_check(nf90_put_var(ncid_save, varid(4), cryduidui, startv_o, countv_o))
-  countv_o(5) = ny
   countv_o(6) = nTr
-  call io_check(nf90_put_var(ncid_save, varid(5), cyTr, startv_o, countv_o))
-  countv_o(5) = nry
-  countv_o(6) = nTr
-  call io_check(nf90_put_var(ncid_save, varid(6), cryTr, startv_o, countv_o))
-  countv_o(5) = nduidui
-  countv_o(6) = nTr
-  call io_check(nf90_put_var(ncid_save, varid(7), cduiduiTr, startv_o, countv_o))
+  call io_check(nf90_put_var(ncid_save, varid(1), cAtATr, startv_o, countv_o))
+  countv_o(6) = nTr_I
+  call io_check(nf90_put_var(ncid_save, varid(2), cAtATr_I, startv_o, countv_o))
+  countv_o(6) = nTr_H
+  call io_check(nf90_put_var(ncid_save, varid(3), cAtATr_H, startv_o, countv_o))
+  countv_o(6) = nTy
+  call io_check(nf90_put_var(ncid_save, varid(4), cAtATy, startv_o, countv_o))
 
-  call io_check(nf90_put_var(ncid_save, varid(8), time, (/startv_o(7)/)))
+  call io_check(nf90_put_var(ncid_save, varid(5), time, (/startv_o(7)/)))
 
 end subroutine save_terms
 
-subroutine open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
-                     nrx_2, nry_2, nrz_2, nTr_2, &
-                     rx, ry, rz, y, grid_Tr, grid_duidui, &
+subroutine open_ncdf(nrx, nry, nrz, ny, nt, &
+                     nTr, nTr_I, nTr_H, nTy, nAtA, &
+                     nrx_2, nry_2, nrz_2, &
+                     rx, ry, rz, y, grid_Tr, grid_Tr_I, grid_Tr_H, &
+                     grid_Ty, grid_AtA, &
                      ncid_save, varid, output_fn)
   use netcdf
   use MPI
 
-  integer :: nrx, nry, nrz, ny, nduidui, nTr
-  integer :: nrx_2, nry_2, nrz_2, nTr_2
+  integer :: nrx, nry, nrz, ny, nAtA, nTr, nTr_I, nTr_H, nTy
+  integer :: nrx_2, nry_2, nrz_2
   real(4) :: rx(-nrx_2:nrx_2), ry(-nry_2:nry_2), rz(-nrz_2:nrz_2), y(ny)
-  real(4) :: grid_Tr(nTr), grid_duidui(nduidui)
+  real(4) :: grid_Tr(nTr), grid_Tr_I(nTr_I), grid_Tr_H(nTr_H), grid_Ty(nTy), grid_AtA(nAtA)
 
   integer :: ncid_save
-  integer :: varid(8), dimid(9), idgrid_r1, idgrid_r2, idgrid_r3, idgrid_y
-  integer :: crxry_id(7), cryy_id(7), cyduidui_id(7), cryduidui_id(7), cyTr_id(7), cryTr_id(7), cduiduiTr_id(7)
+  integer :: varid(5), dimid(12), idgrid_r1, idgrid_r2, idgrid_r3, idgrid_y
+  integer :: idgrid_Tr, idgrid_Tr_I, idgrid_Tr_H, idgrid_Ty, idgrid_AtA
+  integer :: cAtATr_id(7), cAtATr_I_id(7), cAtATr_H_id(7), cAtATy_id(7)
   character(100) :: case_fn = "re9502pipi.", output_fn
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
@@ -87,35 +75,35 @@ subroutine open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
   call io_check(nf90_def_dim(ncid_save, 'dim_scale_y', nry, dimid(2)))
   call io_check(nf90_def_dim(ncid_save, 'dim_scale_z', nrz, dimid(3)))
   call io_check(nf90_def_dim(ncid_save, 'dim_physical_y', ny, dimid(4)))
-  call io_check(nf90_def_dim(ncid_save, 'dim_duidui', nduidui, dimid(5)))
-  call io_check(nf90_def_dim(ncid_save, 'dim_Tr', nTr, dimid(6)))
-  call io_check(nf90_def_dim(ncid_save, 't', nt, dimid(7)))
-  call io_check(nf90_def_dim(ncid_save, 'srx', 2, dimid(8)))
-  call io_check(nf90_def_dim(ncid_save, 'srz', 2, dimid(9)))
+  call io_check(nf90_def_dim(ncid_save, 'dim_Tr', nTr, dimid(5)))
+  call io_check(nf90_def_dim(ncid_save, 'dim_Tr_I', nTr_I, dimid(6)))
+  call io_check(nf90_def_dim(ncid_save, 'dim_Tr_H', nTr_H, dimid(7)))
+  call io_check(nf90_def_dim(ncid_save, 'dim_Ty', nTy, dimid(8)))
+  call io_check(nf90_def_dim(ncid_save, 'dim_AtA', nAtA, dimid(9)))
+  call io_check(nf90_def_dim(ncid_save, 't', nt, dimid(10)))
+  call io_check(nf90_def_dim(ncid_save, 'srx', 2, dimid(11)))
+  call io_check(nf90_def_dim(ncid_save, 'srz', 2, dimid(12)))
 
   call io_check(nf90_def_var(ncid_save, 'grid_rx', nf90_float, dimid(1), idgrid_r1))
   call io_check(nf90_def_var(ncid_save, 'grid_ry', nf90_float, dimid(2), idgrid_r2))
   call io_check(nf90_def_var(ncid_save, 'grid_rz', nf90_float, dimid(3), idgrid_r3))
   call io_check(nf90_def_var(ncid_save, 'grid_y', nf90_float, dimid(4), idgrid_y))
-  call io_check(nf90_def_var(ncid_save, 'grid_duidui', nf90_float, dimid(5), idgrid_duidui))
-  call io_check(nf90_def_var(ncid_save, 'grid_Tr', nf90_float, dimid(6), idgrid_Tr))
+  call io_check(nf90_def_var(ncid_save, 'grid_Tr', nf90_float, dimid(5), idgrid_Tr))
+  call io_check(nf90_def_var(ncid_save, 'grid_Tr_I', nf90_float, dimid(6), idgrid_Tr_I))
+  call io_check(nf90_def_var(ncid_save, 'grid_Tr_H', nf90_float, dimid(7), idgrid_Tr_H))
+  call io_check(nf90_def_var(ncid_save, 'grid_Ty', nf90_float, dimid(8), idgrid_Ty))
+  call io_check(nf90_def_var(ncid_save, 'grid_AtA', nf90_float, dimid(9), idgrid_AtA))
 
-  crxry_id = (/dimid(8), dimid(2), dimid(9), dimid(4), dimid(1), dimid(2), dimid(7)/)
-  cryy_id = (/dimid(8), dimid(2), dimid(9), dimid(4), dimid(2), dimid(4), dimid(7)/)
-  cyduidui_id = (/dimid(8), dimid(2), dimid(9), dimid(4), dimid(4), dimid(5), dimid(7)/)
-  cryduidui_id = (/dimid(8), dimid(2), dimid(9), dimid(4), dimid(2), dimid(5), dimid(7)/)
-  cyTr_id = (/dimid(8), dimid(2), dimid(9), dimid(4), dimid(4), dimid(6), dimid(7)/)
-  cryTr_id = (/dimid(8), dimid(2), dimid(9), dimid(4), dimid(2), dimid(6), dimid(7)/)
-  cduiduiTr_id = (/dimid(8), dimid(2), dimid(9), dimid(4), dimid(5), dimid(6), dimid(7)/)
+  cAtATr_id = (/dimid(11), dimid(2), dimid(12), dimid(4), dimid(9), dimid(5), dimid(10)/)
+  cAtATr_I_id = (/dimid(11), dimid(2), dimid(12), dimid(4), dimid(9), dimid(6), dimid(10)/)
+  cAtATr_H_id = (/dimid(11), dimid(2), dimid(12), dimid(4), dimid(9), dimid(7), dimid(10)/)
+  cAtATy_id = (/dimid(11), dimid(2), dimid(12), dimid(4), dimid(9), dimid(8), dimid(10)/)
 
-  call io_check(nf90_def_var(ncid_save, 'crxry', nf90_float, crxry_id, varid(1)))
-  call io_check(nf90_def_var(ncid_save, 'cryy', nf90_float, cryy_id, varid(2)))
-  call io_check(nf90_def_var(ncid_save, 'cyduidui', nf90_float, cyduidui_id, varid(3)))
-  call io_check(nf90_def_var(ncid_save, 'cryduidui', nf90_float, cryduidui_id, varid(4)))
-  call io_check(nf90_def_var(ncid_save, 'cyTr', nf90_float, cyTr_id, varid(5)))
-  call io_check(nf90_def_var(ncid_save, 'cryTr', nf90_float, cryTr_id, varid(6)))
-  call io_check(nf90_def_var(ncid_save, 'cduiduiTr', nf90_float, cduiduiTr_id, varid(7)))
-  call io_check(nf90_def_var(ncid_save, 'time', nf90_float, dimid(7), varid(8)))
+  call io_check(nf90_def_var(ncid_save, 'cAtATr', nf90_float, cAtATr_id, varid(1)))
+  call io_check(nf90_def_var(ncid_save, 'cAtATr_H', nf90_float, cAtATr_H_id, varid(2)))
+  call io_check(nf90_def_var(ncid_save, 'cAtATr_I', nf90_float, cAtATr_I_id, varid(3)))
+  call io_check(nf90_def_var(ncid_save, 'cAtATy', nf90_float, cAtATy_id, varid(4)))
+  call io_check(nf90_def_var(ncid_save, 'time', nf90_float, dimid(10), varid(5)))
 
   call io_check(nf90_put_att(ncid_save, nf90_global, 'Database', 'TCF 950 Lozano'))
 
@@ -124,9 +112,6 @@ subroutine open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
   call io_check(nf90_var_par_access(ncid_save, varid(3), nf90_collective))
   call io_check(nf90_var_par_access(ncid_save, varid(4), nf90_collective))
   call io_check(nf90_var_par_access(ncid_save, varid(5), nf90_collective))
-  call io_check(nf90_var_par_access(ncid_save, varid(6), nf90_collective))
-  call io_check(nf90_var_par_access(ncid_save, varid(7), nf90_collective))
-  call io_check(nf90_var_par_access(ncid_save, varid(8), nf90_collective))
 
   call io_check(nf90_enddef(ncid_save))
 
@@ -134,7 +119,10 @@ subroutine open_ncdf(nrx, nry, nrz, ny, nt, nduidui, nTr, &
   call io_check(nf90_put_var(ncid_save, idgrid_r2, ry))
   call io_check(nf90_put_var(ncid_save, idgrid_r3, rz))
   call io_check(nf90_put_var(ncid_save, idgrid_y, y))
-  call io_check(nf90_put_var(ncid_save, idgrid_duidui, grid_duidui))
   call io_check(nf90_put_var(ncid_save, idgrid_Tr, grid_Tr))
+  call io_check(nf90_put_var(ncid_save, idgrid_Tr_I, grid_Tr_I))
+  call io_check(nf90_put_var(ncid_save, idgrid_Tr_H, grid_Tr_H))
+  call io_check(nf90_put_var(ncid_save, idgrid_Ty, grid_Ty))
+  call io_check(nf90_put_var(ncid_save, idgrid_AtA, grid_AtA))
 
 end subroutine open_ncdf
