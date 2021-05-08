@@ -1,6 +1,6 @@
 subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                          pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
-                         pufl, &
+                         pufl, pdudt, pdvdt, pdwdt, &
                          nprtcls, time, it, input_fn)
   use netcdf
 
@@ -11,12 +11,13 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
   real(4) :: pdudx(nprtcls), pdvdx(nprtcls), pdwdx(nprtcls), pdpdx(nprtcls)
   real(4) :: pdudy(nprtcls), pdvdy(nprtcls), pdwdy(nprtcls), pdpdy(nprtcls)
   real(4) :: pdudz(nprtcls), pdvdz(nprtcls), pdwdz(nprtcls), pdpdz(nprtcls)
+  real(4) :: pdudt(nprtcls), pdvdt(nprtcls), pdwdt(nprtcls)
   real(4) :: time
 
   character(100) :: input_fn, case_fn = "re9502pipi."
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/particles/"
 
-  integer :: varid(17), ncid, startv(2), countv(2)
+  integer :: varid(20), ncid, startv(2), countv(2)
 
   ! Load initial Velocity Field
   call io_check(nf90_open(path=trim(data_dir)//trim(case_fn)//trim(input_fn)//'.nc', &
@@ -44,7 +45,11 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
 
   call io_check(nf90_inq_varid(ncid, 'pufl', varid(16)))
 
-  call io_check(nf90_inq_varid(ncid, 'time', varid(17)))
+  call io_check(nf90_inq_varid(ncid, 'pdudt', varid(17)))
+  call io_check(nf90_inq_varid(ncid, 'pdvdt', varid(18)))
+  call io_check(nf90_inq_varid(ncid, 'pdwdt', varid(19)))
+
+  call io_check(nf90_inq_varid(ncid, 'time', varid(20)))
 
   startv(1) = 1
   startv(2) = it
@@ -74,9 +79,12 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
 
   call io_check(nf90_get_var(ncid, varid(16), pufl, start=startv, count=countv))
 
-  call io_check(nf90_get_var(ncid, varid(17), time, (/startv(2)/)))
+  call io_check(nf90_get_var(ncid, varid(17), pdudt, start=startv, count=countv))
+  call io_check(nf90_get_var(ncid, varid(18), pdvdt, start=startv, count=countv))
+  call io_check(nf90_get_var(ncid, varid(19), pdwdt, start=startv, count=countv))
+
+  call io_check(nf90_get_var(ncid, varid(20), time, (/startv(2)/)))
 
   call io_check(nf90_close(ncid))
 
 end subroutine load_timestep
-
