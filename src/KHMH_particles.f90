@@ -74,6 +74,8 @@ program KHMH_particles
   integer :: rank, size, ierr
   integer :: rstart, rstop, count, remainder, nfiles
   integer :: ncid_save
+  integer :: istart
+  character :: istart_char
 
   character(100) :: input_fn = "2m_hx_hy_300ts_evr1"
   character(100) :: output_fn = "2m_hx_hy_300ts_evr1_terms_jpdf"
@@ -107,6 +109,8 @@ program KHMH_particles
 
   rstart = rstart + 1
   rstop = rstop + 1
+  call get_command_argument(1, istart_char)   !first, read in the two values
+  read(istart_char, *)istart                    !then, convert them to int
 
   nb_procs = 1
 
@@ -276,7 +280,7 @@ program KHMH_particles
   end if
 
   call load_1st_timestep(px_0, py_0, pz_0, &
-                         nprtcls, 1, input_fn)
+                         nprtcls, 1, input_fn, istart_char)
 
   call open_ncdf(nrx, nry, nrz, ny, nt, &
                  nTr, nTr_I, nTr_H, nTy, nAtA, &
@@ -295,9 +299,9 @@ program KHMH_particles
     call load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                        pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
                        pufl, pdudt, pdvdt, pdwdt, &
-                       nprtcls, time, it, input_fn)
+                       nprtcls, time, it, input_fn, istart_char)
     pum = pu - pufl
-    print *, "Timestep = ", it, " time ", time
+    print *, "istart = ", istart, "Timestep = ", it, " time ", time
 
 !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx_0,pry_0,prz_0,pyc_0), &
 !$OMP& PRIVATE(prx,pry,prz,pyc,irx,iry,irz,iy,du,us,usm,Tr_tp,Ty_tp,Tym_tp,Tr,iTr), &
@@ -464,7 +468,7 @@ program KHMH_particles
                     nTr, nTr_I, nTr_H, nTy, nAtA, &
                     nrx_2, nry_2, nrz_2, &
                     cAtATr, cAtATr_I, cAtATr_H, cAtATy, &
-                    time, it, ncid_save, varid_o, output_fn)
+                    time, it, ncid_save, varid_o, output_fn, istart_char)
 
   end do
 

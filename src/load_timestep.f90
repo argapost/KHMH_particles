@@ -1,7 +1,7 @@
 subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                          pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
                          pufl, pdudt, pdvdt, pdwdt, &
-                         nprtcls, time, it, input_fn)
+                         nprtcls, time, it, input_fn, istart_char)
   use netcdf
 
   integer :: nprtcls, it
@@ -14,13 +14,13 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
   real(4) :: pdudt(nprtcls), pdvdt(nprtcls), pdwdt(nprtcls)
   real(4) :: time
 
-  character(100) :: input_fn, case_fn = "re9502pipi."
+  character(100) :: input_fn, istart_char, case_fn = "re9502pipi.istart_"
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/particles/"
 
   integer :: varid(20), ncid, startv(2), countv(2)
 
   ! Load initial Velocity Field
-  call io_check(nf90_open(path=trim(data_dir)//trim(case_fn)//trim(input_fn)//'.nc', &
+  call io_check(nf90_open(path=trim(data_dir)//trim(case_fn)//trim(istart_char)//'.'//trim(input_fn)//'.nc', &
                           mode=nf90_nowrite, ncid=ncid))
 
   call io_check(nf90_inq_varid(ncid, 'px', varid(1)))

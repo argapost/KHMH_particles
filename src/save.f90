@@ -52,7 +52,7 @@ subroutine open_ncdf(nrx, nry, nrz, ny, nt, &
                      nrx_2, nry_2, nrz_2, &
                      rx, ry, rz, y, grid_Tr, grid_Tr_I, grid_Tr_H, &
                      grid_Ty, grid_AtA, &
-                     ncid_save, varid, output_fn)
+                     ncid_save, varid, output_fn, istart_char)
   use netcdf
   use MPI
 
@@ -65,10 +65,10 @@ subroutine open_ncdf(nrx, nry, nrz, ny, nt, &
   integer :: varid(5), dimid(12), idgrid_r1, idgrid_r2, idgrid_r3, idgrid_y
   integer :: idgrid_Tr, idgrid_Tr_I, idgrid_Tr_H, idgrid_Ty, idgrid_AtA
   integer :: cAtATr_id(7), cAtATr_I_id(7), cAtATr_H_id(7), cAtATy_id(7)
-  character(100) :: case_fn = "re9502pipi.", output_fn
+  character(100) :: case_fn = "re9502pipi.istart_", output_fn, istart_char
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
-  call io_check(nf90_create_par(path=trim(data_dir)//'khmh/'//trim(case_fn)//trim(output_fn)//'.nc', &
+  call io_check(nf90_create_par(path=trim(data_dir)//'khmh/'//trim(case_fn)//trim(istart_char)//'.'//trim(output_fn)//'.nc', &
                                 cmode=ior(nf90_netcdf4, nf90_mpiio), ncid=ncid_save, comm=MPI_COMM_WORLD, info=MPI_INFO_NULL))
 
   call io_check(nf90_def_dim(ncid_save, 'dim_scale_x', nrx, dimid(1)))
