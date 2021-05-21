@@ -12,6 +12,7 @@ subroutine load_1st_timestep(px, py, pz, &
   integer :: varid(3), ncid, startv(2), countv(2)
 
   ! Load initial Velocity Field
+  print *, trim(data_dir)//trim(case_fn)//trim(istart_char)//'.'//trim(input_fn)//'.nc',
   call io_check(nf90_open(path=trim(data_dir)//trim(case_fn)//trim(istart_char)//'.'//trim(input_fn)//'.nc', &
                           mode=nf90_nowrite, ncid=ncid))
 

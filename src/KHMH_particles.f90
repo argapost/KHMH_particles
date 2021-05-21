@@ -75,7 +75,7 @@ program KHMH_particles
   integer :: rstart, rstop, count, remainder, nfiles
   integer :: ncid_save
   integer :: istart
-  character :: istart_char
+  character(100) :: istart_char
 
   character(100) :: input_fn = "2m_hx_hy_300ts_evr2"
   character(100) :: output_fn = "2m_hx_hy_300ts_evr2_terms_jpdf"
