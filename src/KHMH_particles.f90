@@ -30,7 +30,7 @@ program KHMH_particles
   real(4), parameter :: mAtA = 0.15
   real(4) ::  dTr_uni, dTr_I_uni, dTr_H_uni, dTy_uni, dAtA_uni
 
-  integer, parameter :: nt = 300
+  integer, parameter :: nt = 150
 
   integer, parameter :: nprtcls = 2000000
 
