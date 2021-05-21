@@ -287,7 +287,7 @@ program KHMH_particles
                  nrx_2, nry_2, nrz_2, &
                  rx, ry, rz, y, grid_Tr, grid_Tr_I, grid_Tr_H, &
                  grid_Ty, grid_AtA, &
-                 ncid_save, varid_o, output_fn)
+                 ncid_save, varid_o, output_fn, istart_char)
 
   call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
@@ -468,7 +468,7 @@ program KHMH_particles
                     nTr, nTr_I, nTr_H, nTy, nAtA, &
                     nrx_2, nry_2, nrz_2, &
                     cAtATr, cAtATr_I, cAtATr_H, cAtATy, &
-                    time, it, ncid_save, varid_o, output_fn, istart_char)
+                    time, it, ncid_save, varid_o, output_fn)
 
   end do
 
