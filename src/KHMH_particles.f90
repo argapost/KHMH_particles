@@ -17,7 +17,7 @@ program KHMH_particles
   real(4), parameter :: drz = 0.01
   real(4), parameter :: dy = 0.01
 
-  integer, parameter :: nt = 400
+  integer, parameter :: nt = 150
 
   integer, parameter :: nprtcls = 2000000
 
@@ -59,8 +59,8 @@ program KHMH_particles
   integer :: rank, size, ierr
   integer :: rstart, rstop, count, remainder, nfiles
 
-  character(100) :: input_fn = "2mrandom"
-  character(100) :: output_fn = "2mrandom"
+  character(100) :: input_fn = "istart_0.2m_hx_hy_300ts_evr2"
+  character(100) :: output_fn = "2m_hx_hy_300ts_evr2_stds"
   character(100) :: case_fn = "re9502pipi."
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/"
 
@@ -140,7 +140,7 @@ program KHMH_particles
   allocate (Tr_I(nrx, nry, nrz, ny))
   allocate (Tr_H(nrx, nry, nrz, ny))
 
-  Dis = 0.; counter = 0.; duidui = 0.; Rs = 0.; 
+  Dis = 0.; counter = 0.; duidui = 0.; Rs = 0.;
   Dt = 0.; Tp = 0.; Tr = 0.; Trm = 0.; Ty = 0.; Tym = 0.; Dr = 0.; Dc = 0.
   Tr_I = 0.; Tr_H = 0.
 
@@ -164,9 +164,9 @@ program KHMH_particles
     pum = pu - pufl
 
 !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,prx,pry,prz,pyc,irx,iry,irz,iy,du,us,dum,usm,Tr_tp,Ty_tp,Trm_tp,Tym_tp,Tx_tp,Tz_tp,Rs_tp,D_tp)
-!$OMP DO
+!$OMP DO SCHEDULE(GUIDED)
     do ip1 = 1, nprtcls
-    do ip2 = ip1 + 1, nprtcls
+    do ip2 = 1, ip1 - 1
       prx = ABS(px(ip2) - px(ip1))
       pry = ABS(py(ip2) - py(ip1))
       prz = ABS(pz(ip2) - pz(ip1))
@@ -195,12 +195,12 @@ program KHMH_particles
         us(2) = pv(ip2) + pv(ip1)
         us(3) = pw(ip2) + pw(ip1)
 
-        duidui(irx, iry, irz, iy) = duidui(irx, iry, irz, iy) + du(1)*du(1) + du(2)*du(2) + du(3)*du(3)   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
+        duidui(irx, iry, irz, iy) = duidui(irx, iry, irz, iy) + (du(1)*du(1) + du(2)*du(2) + du(3)*du(3)) ** 2   ! (u_1-u_2)**2 + (v_1-v_2)**2 + (w_1-w_2)**2
 
         ! Time derivative terms  :  d/dt [(dui)^2]
-        Dt(irx, iry, irz, iy) = Dt(irx, iry, irz, iy) + 2.0*(du(1)*(pdudt(ip2) - pdudt(ip1)) &  ! (u_1-u_2)*(du/dt_1 - du/dt_2)
+        Dt(irx, iry, irz, iy) = Dt(irx, iry, irz, iy) + (2.0*(du(1)*(pdudt(ip2) - pdudt(ip1)) &  ! (u_1-u_2)*(du/dt_1 - du/dt_2)
                                                              + du(2)*(pdvdt(ip2) - pdvdt(ip1)) &  ! (v_1-v_2)*(dv/dt_1 - dv/dt_2)
-                                                             + du(3)*(pdwdt(ip2) - pdwdt(ip1)))   ! (w_1-w_2)*(dw/dt_1 - dw/dt_2)
+                                                             + du(3)*(pdwdt(ip2) - pdwdt(ip1)))) ** 2   ! (w_1-w_2)*(dw/dt_1 - dw/dt_2)
 
         ! Non-linear term in scale (fluctuation part) :   d/drj [(dui)^2 duj]
 
@@ -216,9 +216,9 @@ program KHMH_particles
         Tr_tp(3, 2) = du(3)*du(2)*(pdwdy(ip2) + pdwdy(ip1))  ! 0.5*(w_1-w_2)*(v_1-v_2)*(dw/dy_1 + dw/dy_2)
         Tr_tp(3, 3) = du(3)*du(3)*(pdwdz(ip2) + pdwdz(ip1))  ! 0.5*(w_1-w_2)*(w_1-w_2)*(dw/dz_1 + dw/dz_2)
 
-        Tr(irx, iry, irz, iy) = Tr(irx, iry, irz, iy) + Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
+        Tr(irx, iry, irz, iy) = Tr(irx, iry, irz, iy) + (Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
                                 + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
-                                + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
+                                + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)) ** 2
 
         ! Non-linear term (inhomogeneous fluctuation part) :   d/drj [duj*(ui1^2 + ui2^2)]   (with dui = ui1 - ui2)
         Tr_tp(1, 1) = du(1)*(pufl(ip2)*pdudx(ip2) - pufl(ip1)*pdudx(ip1)) ! (u_1-u_2)*(u_1*du/dx_1 - u_2*du/dx_2)
@@ -233,9 +233,9 @@ program KHMH_particles
         Tr_tp(3, 2) = du(2)*(pw(ip2)*pdwdy(ip2) - pw(ip1)*pdwdy(ip1))
         Tr_tp(3, 3) = du(3)*(pw(ip2)*pdwdz(ip2) - pw(ip1)*pdwdz(ip1))
 
-        Tr_I(irx, iry, irz, iy) = Tr_I(irx, iry, irz, iy) + Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
+        Tr_I(irx, iry, irz, iy) = Tr_I(irx, iry, irz, iy) + (Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
                                   + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
-                                  + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
+                                  + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)) ** 2
 
         ! Non-linear term in scale (homogeneous fluctuation part) :  -2 d/drj [duj*(ui1*ui2]   (with dui = ui1 - ui2)
         Tr_tp(1, 1) = -du(1)*(pufl(ip1)*pdudx(ip2) - pufl(ip2)*pdudx(ip1)) ! (u_1-u_2)*(u_1*du/dx_2 - u_2*du/dx_1)
@@ -250,9 +250,9 @@ program KHMH_particles
         Tr_tp(3, 2) = -du(2)*(pw(ip1)*pdwdy(ip2) - pw(ip2)*pdwdy(ip1))
         Tr_tp(3, 3) = -du(3)*(pw(ip1)*pdwdz(ip2) - pw(ip2)*pdwdz(ip1))
 
-        Tr_H(irx, iry, irz, iy) = Tr_H(irx, iry, irz, iy) + Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
+        Tr_H(irx, iry, irz, iy) = Tr_H(irx, iry, irz, iy) + (Tr_tp(1, 1) + Tr_tp(1, 2) + Tr_tp(1, 3) &
                                   + Tr_tp(2, 1) + Tr_tp(2, 2) + Tr_tp(2, 3) &
-                                  + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)
+                                  + Tr_tp(3, 1) + Tr_tp(3, 2) + Tr_tp(3, 3)) ** 2
 
         ! Non-linear term in scale (mean part) : d/drj [(dui)^2 dumj]
 
@@ -262,7 +262,7 @@ program KHMH_particles
 
         Trm_tp(3, 1) = du(3)*dum*(pdwdx(ip2) + pdwdx(ip1))  ! (w_1-w_2)*(um_1-um_2)*(dw/dx_1 + dw/dx_2)
 
-        Trm(irx, iry, irz, iy) = Trm(irx, iry, irz, iy) + Trm_tp(1, 1) + Trm_tp(2, 1) + Trm_tp(3, 1)
+        Trm(irx, iry, irz, iy) = Trm(irx, iry, irz, iy) + (Trm_tp(1, 1) + Trm_tp(2, 1) + Trm_tp(3, 1)) ** 2
 
         ! Non-linear term in physical space
 
@@ -278,9 +278,9 @@ program KHMH_particles
         Ty_tp(3, 2) = du(3)*us(2)*(pdwdy(ip2) - pdwdy(ip1))  ! 0.5*(w_1-w_2)*(v_1 + v_2)*(dw/dy_1 - dw/dy_2)
         Ty_tp(3, 3) = du(3)*us(3)*(pdwdz(ip2) - pdwdz(ip1))  ! 0.5*(w_1-w_2)*(w_1 + w_2)*(dw/dz_1 - dw/dz_2)
 
-        Ty(irx, iry, irz, iy) = Ty(irx, iry, irz, iy) + Ty_tp(1, 1) + Ty_tp(1, 2) + Ty_tp(1, 3) &
+        Ty(irx, iry, irz, iy) = Ty(irx, iry, irz, iy) + (Ty_tp(1, 1) + Ty_tp(1, 2) + Ty_tp(1, 3) &
                                 + Ty_tp(2, 1) + Ty_tp(2, 2) + Ty_tp(2, 3) &
-                                + Ty_tp(3, 1) + Ty_tp(3, 2) + Ty_tp(3, 3)
+                                + Ty_tp(3, 1) + Ty_tp(3, 2) + Ty_tp(3, 3)) ** 2
 
         ! Non-linear term in physical space (mean part) : d/dXj [(dui)^2 umj*]
 
@@ -290,17 +290,17 @@ program KHMH_particles
 
         Tym_tp(3, 1) = du(3)*usm*(pdwdx(ip2) - pdwdx(ip1))  ! (w_1-w_2)*(um_1 + um_2)*(dw/dx_1 - dw/dz_2)
 
-        Tym(irx, iry, irz, iy) = Tym(irx, iry, irz, iy) + Tym_tp(1, 1) + Tym_tp(2, 1) + Tym_tp(3, 1)
+        Tym(irx, iry, irz, iy) = Tym(irx, iry, irz, iy) + (Tym_tp(1, 1) + Tym_tp(2, 1) + Tym_tp(3, 1)) ** 2
 
         ! Non-linear term 2 in physical space : 2 dui uj* d/dXj [dumi]
 
         Tx_tp(1, 2) = du(1)*us(2)*(pdumdy(ip2) - pdumdy(ip1))  ! (u_1-u_2)*(v_1 + v_2)*(dum/dy_1 - dum/dy_2)
-        Tx(irx, iry, irz, iy) = Tx(irx, iry, irz, iy) + Tx_tp(1, 2)
+        Tx(irx, iry, irz, iy) = Tx(irx, iry, irz, iy) + Tx_tp(1, 2) ** 2
 
         ! Non-linear term 2 in scale : 2 dui duj d/drj [dumi]
 
         Tz_tp(1, 2) = du(1)*du(2)*(pdumdy(ip2) + pdumdy(ip1))  ! (u_1-u_2)*(v_1-v_2)*(dum/dy_1 + dum/dy_2)
-        Tz(irx, iry, irz, iy) = Tz(irx, iry, irz, iy) + Tz_tp(1, 2)
+        Tz(irx, iry, irz, iy) = Tz(irx, iry, irz, iy) + Tz_tp(1, 2) ** 2
 
         ! Reynolds Stress term : dui d/dXj [ duiuj ]
 
@@ -308,17 +308,17 @@ program KHMH_particles
 
         Rs_tp(2, 2) = du(2)*(pdvvdy(ip2) - pdvvdy(ip1))  ! (v_1-v_2)*(dvv/dy_1 - dvv/dy_2)
 
-        Rs(irx, iry, irz, iy) = Rs(irx, iry, irz, iy) + Rs_tp(1, 2) + Rs_tp(2, 2)
+        Rs(irx, iry, irz, iy) = Rs(irx, iry, irz, iy) + (Rs_tp(1, 2) + Rs_tp(2, 2)) ** 2
 
         ! Pressure term : 2* dui d/dXi [ dp ]
 
-        Tp(irx, iry, irz, iy) = Tp(irx, iry, irz, iy) + 2.0*(du(1)*(pdpdx(ip2) - pdpdx(ip1)) &  ! (u_1-u_2)*(dp/dx_1 - dp/dx_2)
+        Tp(irx, iry, irz, iy) = Tp(irx, iry, irz, iy) + (2.0*(du(1)*(pdpdx(ip2) - pdpdx(ip1)) &  ! (u_1-u_2)*(dp/dx_1 - dp/dx_2)
                                                              + du(2)*(pdpdy(ip2) - pdpdy(ip1)) &  ! (v_1-v_2)*(dp/dy_1 - dp/dy_2)
-                                                             + du(3)*(pdpdz(ip2) - pdpdz(ip1)))   ! (w_1-w_2)*(dp/dz_1 - dp/dz_2)
+                                                             + du(3)*(pdpdz(ip2) - pdpdz(ip1)))) ** 2   ! (w_1-w_2)*(dp/dz_1 - dp/dz_2)
 
         ! Dissipation term
 
-        Dis(irx, iry, irz, iy) = Dis(irx, iry, irz, iy) + 2.0*(peps(ip2) + peps(ip1))
+        Dis(irx, iry, irz, iy) = Dis(irx, iry, irz, iy) + (2.0*(peps(ip2) + peps(ip1))) ** 2
 
         ! Diffusion term in scale and space
 
@@ -354,7 +354,7 @@ program KHMH_particles
 
         ! Diffusion term in scale :  2*nu * d2/drj[ (dui)^2 ]
 
-        Dr(irx, iry, irz, iy) = Dr(irx, iry, irz, iy) + nu*((D_tp(1, 1, 1) + D_tp(2, 1, 1) + D_tp(3, 1, 1) + &
+        Dr(irx, iry, irz, iy) = Dr(irx, iry, irz, iy) + (nu*((D_tp(1, 1, 1) + D_tp(2, 1, 1) + D_tp(3, 1, 1) + &
                                                              D_tp(1, 1, 2) + D_tp(2, 1, 2) + D_tp(3, 1, 2) + &
                                                              D_tp(1, 1, 3) + D_tp(2, 1, 3) + D_tp(3, 1, 3)) &
                                                             + (D_tp(1, 2, 1) + D_tp(2, 2, 1) + D_tp(3, 2, 1) + &
@@ -362,11 +362,11 @@ program KHMH_particles
                                                                D_tp(1, 2, 3) + D_tp(2, 2, 3) + D_tp(3, 2, 3)) &
                                                             + (D_tp(1, 3, 1) + D_tp(2, 3, 1) + D_tp(3, 3, 1) + &
                                                                D_tp(1, 3, 2) + D_tp(2, 3, 2) + D_tp(3, 3, 2) + &
-                                                               D_tp(1, 3, 3) + D_tp(2, 3, 3) + D_tp(3, 3, 3)))
+                                                               D_tp(1, 3, 3) + D_tp(2, 3, 3) + D_tp(3, 3, 3)))) ** 2
 
         ! Diffusion term in space :  nu/2 * d2/dXj[ (dui)^2 ]
 
-        Dc(irx, iry, irz, iy) = Dc(irx, iry, irz, iy) + nu*((D_tp(1, 1, 1) + D_tp(2, 1, 1) - D_tp(3, 1, 1) + &
+        Dc(irx, iry, irz, iy) = Dc(irx, iry, irz, iy) + (nu*((D_tp(1, 1, 1) + D_tp(2, 1, 1) - D_tp(3, 1, 1) + &
                                                              D_tp(1, 1, 2) + D_tp(2, 1, 2) - D_tp(3, 1, 2) + &
                                                              D_tp(1, 1, 3) + D_tp(2, 1, 3) - D_tp(3, 1, 3)) &
                                                             + (D_tp(1, 2, 1) + D_tp(2, 2, 1) - D_tp(3, 2, 1) + &
@@ -374,7 +374,7 @@ program KHMH_particles
                                                                D_tp(1, 2, 3) + D_tp(2, 2, 3) - D_tp(3, 2, 3)) &
                                                             + (D_tp(1, 3, 1) + D_tp(2, 3, 1) - D_tp(3, 3, 1) + &
                                                                D_tp(1, 3, 2) + D_tp(2, 3, 2) - D_tp(3, 3, 2) + &
-                                                               D_tp(1, 3, 3) + D_tp(2, 3, 3) - D_tp(3, 3, 3)))
+                                                               D_tp(1, 3, 3) + D_tp(2, 3, 3) - D_tp(3, 3, 3)))) ** 2
       end if
 
     end do
@@ -463,4 +463,3 @@ subroutine io_check(status)
 
   return
 end subroutine io_check
-
