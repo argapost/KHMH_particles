@@ -146,7 +146,7 @@ program KHMH_particles
     pum = pu - pufl
 
     do is = 1, nspheres
-!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,ipair,du,us,dum,usm,Tr_tp,Ty_tp,Trm_tp,Tym_tp,Tx_tp,Tz_tp,)
+!$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ip1,ip2,ipair,du,us,dum,usm,Tr_tp,Ty_tp,Trm_tp,Tym_tp,Tx_tp,Tz_tp)
 !$OMP DO
       do ip1 = 1, nprtcls, 2
         ipair = floor(real(ip1/2)) + 1
