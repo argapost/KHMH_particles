@@ -2,11 +2,12 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
                          pdvdx, pdvdy, pdvdz, pdwdx, pdwdy, pdwdz, &
                          pdudxdx, pdudydy, pdudzdz, pdvdxdx, pdvdydy, pdvdzdz, &
                          pdwdxdx, pdwdydy, pdwdzdz, peps, pdpdx, pdpdy, pdpdz, &
-                         pdumdy, pduvdy, pdvvdy, pufl, pdudt, pdvdt, pdwdt, &
-                         nprtcls, it, input_fn)
+                         pdumdy, pduvdy, pdvvdy, pufl, &
+                         ! pdumdy, pduvdy, pdvvdy, pufl, pdudt, pdvdt, pdwdt, &
+                         nprtcls, nspheres, it, input_fn)
   use netcdf
 
-  integer :: nprtcls, it
+  integer :: nprtcls, nspheres, it
 
   real(4) :: px(nprtcls), py(nprtcls), pz(nprtcls)
   real(4) :: pufl(nprtcls), pu(nprtcls), pv(nprtcls), pw(nprtcls), peps(nprtcls)
@@ -17,12 +18,12 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
   real(4) :: pdudydy(nprtcls), pdvdydy(nprtcls), pdwdydy(nprtcls)
   real(4) :: pdudzdz(nprtcls), pdvdzdz(nprtcls), pdwdzdz(nprtcls)
   real(4) :: pdumdy(nprtcls), pduvdy(nprtcls), pdvvdy(nprtcls)
-  real(4) :: pdudt(nprtcls), pdvdt(nprtcls), pdwdt(nprtcls)
+  ! real(4) :: pdudt(nprtcls), pdvdt(nprtcls), pdwdt(nprtcls)
 
   character(100) :: input_fn, case_fn = "re9502pipi."
   character(100) :: data_dir = "/gpfsscratch/rech/avl/ulj39ir/Cases/TCF/Jimenez/Re950/data/particles/"
 
-  integer :: varid(35), ncid, startv(2), countv(2)
+  integer :: varid(35), ncid, startv(3), countv(3)
 
   ! Load initial Velocity Field
   call io_check(nf90_open(path=trim(data_dir)//trim(case_fn)//trim(input_fn)//'.nc', &
@@ -72,15 +73,17 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
 
   call io_check(nf90_inq_varid(ncid, 'pufl', varid(32)))
 
-  call io_check(nf90_inq_varid(ncid, 'pdudt', varid(33)))
-  call io_check(nf90_inq_varid(ncid, 'pdvdt', varid(34)))
-  call io_check(nf90_inq_varid(ncid, 'pdwdt', varid(35)))
+  ! call io_check(nf90_inq_varid(ncid, 'pdudt', varid(33)))
+  ! call io_check(nf90_inq_varid(ncid, 'pdvdt', varid(34)))
+  ! call io_check(nf90_inq_varid(ncid, 'pdwdt', varid(35)))
 
   startv(1) = 1
-  startv(2) = it
+  startv(2) = 1
+  startv(3) = it
 
   countv(1) = nprtcls
-  countv(2) = 1
+  countv(2) = nspheres
+  countv(3) = 1
 
   call io_check(nf90_get_var(ncid, varid(1), px, start=startv, count=countv))
   call io_check(nf90_get_var(ncid, varid(2), py, start=startv, count=countv))
@@ -126,9 +129,9 @@ subroutine load_timestep(px, py, pz, pu, pv, pw, pdudx, pdudy, pdudz, &
 
   call io_check(nf90_get_var(ncid, varid(32), pufl, start=startv, count=countv))
 
-  call io_check(nf90_get_var(ncid, varid(33), pdudt, start=startv, count=countv))
-  call io_check(nf90_get_var(ncid, varid(34), pdvdt, start=startv, count=countv))
-  call io_check(nf90_get_var(ncid, varid(35), pdwdt, start=startv, count=countv))
+  ! call io_check(nf90_get_var(ncid, varid(33), pdudt, start=startv, count=countv))
+  ! call io_check(nf90_get_var(ncid, varid(34), pdvdt, start=startv, count=countv))
+  ! call io_check(nf90_get_var(ncid, varid(35), pdwdt, start=startv, count=countv))
 
   call io_check(nf90_close(ncid))
 
